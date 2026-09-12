@@ -1,0 +1,46 @@
+// Démo oktopios-framework : ORM (oktopios-orm) + config par environnement.
+// Lancer depuis la racine du projet :  okp examples/blog.okp
+use "oktopios_orm/orm.okp"           // fourni par le paquet oktopios-orm
+use "oktopios_framework/config.okp"  // fourni par oktopios-framework
+inject Type
+inject DataImport
+
+@Entity("articles")
+class Article {
+    @Id
+    var id: int
+    @Column("titre")
+    var title: string
+    var vues: int
+    fun __construct(title: string, vues: int) {
+        this.title = title
+        this.vues = vues
+    }
+    fun show(): string {
+        return "#" + this.id + " " + this.title + " (" + this.vues + " vues)"
+    }
+}
+
+// --- Configuration par environnement (.env) ---
+var cfg = new Config()
+cfg.load("local")
+print("== Config ==")
+print("APP_ENV  = " + cfg.get("APP_ENV"))
+print("DB_PATH  = " + cfg.get("DB_PATH"))
+
+var db = "blog.db"
+
+// --- ORM : migration + CRUD ---
+var schema = new Schema()
+var sample = new Article("", 0)
+DataImport.execSQL(db, "DROP TABLE IF EXISTS articles", [])
+print("== Migration ==")
+print(schema.migrate(db, sample))
+
+var repo = new Repo(db, sample)
+var a = new Article("oktopios-framework", 100)
+Type.set(a, "id", 1)
+repo.save(a)
+
+print("== Articles ==")
+for (x in repo.all()) { print("  " + x.show()) }

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oktopios-framework"
+version = "0.1.0"
+description = "Framework web MVC pour le langage Oktopios (facon Django / Symfony) — ORM, config par environnement, et plus"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+authors = [{ name = "Mouanwiya Ali Soule" }]
+keywords = ["oktopios", "framework", "web", "mvc", "orm", "okp"]
+dependencies = ["oktopios-orm>=0.1.0"]
+
+[project.urls]
+Homepage = "https://github.com/ALISOULEMOUANWIYA/oktopios-framework"
+ORM = "https://pypi.org/project/oktopios-orm/"
+Language = "https://pypi.org/project/oktopios/"
+
+[tool.setuptools.packages.find]
+include = ["oktopios_framework*"]
+
+[tool.setuptools.package-data]
+"oktopios_framework" = ["*.okp"]

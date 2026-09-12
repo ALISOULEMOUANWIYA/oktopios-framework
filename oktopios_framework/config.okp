@@ -1,0 +1,57 @@
+// =====================================================================
+//  oktopios-framework — Configuration par environnement (façon Symfony)
+//  Charge un fichier .env.<env> (KEY=VALUE) dans une Map.
+//    Config.load("local")  -> lit .env.local
+//    Config.load("prod")   -> lit .env.prod
+//  Chargé via :  use "framework/config.okp"
+// =====================================================================
+inject File
+inject String
+inject Map
+
+class Config {
+    var values: any
+
+    fun __construct() {
+        this.values = {}
+    }
+
+    // Charge .env.<env> s'il existe (ex: "local", "prod")
+    fun load(env: string): Config {
+        var path = ".env." + env
+        if (File.exists(path)) {
+            this.parseFile(path)
+        }
+        return this
+    }
+
+    fun parseFile(path: string) {
+        for (ligne in File.readlines(path)) {
+            var l = String.trim(ligne)
+            var estCommentaire = String.startsWith(l, "#")
+            if (l != "") {
+              if (estCommentaire == false) {
+                var i = String.indexOf(l, "=")
+                if (i > 0) {
+                    var n = String.length(l)
+                    var debut = i + 1
+                    var brutCle = String.substring(l, 0, i)
+                    var brutVal = String.substring(l, debut, n)
+                    var cle = String.trim(brutCle)
+                    var valeur = String.trim(brutVal)
+                    var maj = Map.set(this.values, cle, valeur)
+                    this.values = maj
+                }
+              }
+            }
+        }
+    }
+
+    fun get(cle: string): any {
+        return Map.get(this.values, cle)
+    }
+
+    fun has(cle: string): bool {
+        return Map.has(this.values, cle)
+    }
+}
