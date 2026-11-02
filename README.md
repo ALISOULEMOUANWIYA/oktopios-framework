@@ -25,7 +25,7 @@ Django tire Python et Symfony tire PHP.
 
 - ✅ **ORM** (via `oktopios-orm`) — modèles décorés, migrations, query-builder
 - ✅ **Configuration** par environnement (`.env.local`, `.env.prod`)
-- ⏳ Routing + contrôleurs (serveur HTTP)
+- ✅ **Routing + contrôleurs** (serveur HTTP via le namespace natif `Server`)
 - ⏳ Moteur de templates (vues)
 - ⏳ Formulaires / validation, Auth, CLI / scaffolding
 
@@ -66,6 +66,37 @@ class Article {
 }
 // ... Schema.migrate / Repo / Query fournis par oktopios-orm
 ```
+
+## Routing / Contrôleurs 🌐
+
+```okp
+use "oktopios_framework/routing.okp"
+
+var res = new Response()
+
+fun home(req: any): any {
+    return "<h1>Oktopios</h1>"
+}
+fun apiUser(req: any): any {
+    var p = req["params"]
+    var data = { "id": p["id"], "nom": "Awa" }
+    return res.json(data)          // -> application/json
+}
+
+var router = new Router()
+router.get("/", home)
+router.get("/api/users/:id", apiUser)
+router.run(8000)                   // serveur bloquant
+```
+
+Un **contrôleur** est une fonction `(req) -> réponse`. `req` est un map
+`{ method, path, query, params, body }`. Il peut renvoyer :
+- une **chaîne** → `200 text/html`
+- `res.json(x)` → `200 application/json`
+- `res.html(s)`, `res.text(s)`, `res.status(code, body)`, `res.redirect(url)`
+
+`Router` : `get` / `post` / `put` / `delete` (chaînables) + `run(port)`.
+Démo complète : `examples/web.okp`.
 
 ## Configuration `.env` (façon Symfony)
 

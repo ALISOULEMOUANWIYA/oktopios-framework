@@ -1,0 +1,24 @@
+// Démo oktopios-framework — Routing & contrôleurs sur le Server natif.
+// Lancer depuis la racine du projet :  okp examples/web.okp
+use "oktopios_framework/routing.okp"
+inject Type
+
+var res = new Response()
+
+fun home(req: any): any {
+    return "<h1>Oktopios Framework</h1><p>Routing operationnel.</p>"
+}
+fun apiUser(req: any): any {
+    var p = req["params"]
+    var data = { "id": p["id"], "nom": "Awa", "role": "admin" }
+    return res.json(data)
+}
+fun teapot(req: any): any {
+    return res.status(418, "Je suis une theiere")
+}
+
+var router = new Router()
+router.get("/", home)
+router.get("/api/users/:id", apiUser)
+router.get("/teapot", teapot)
+router.run(8070)

@@ -1,0 +1,72 @@
+// =====================================================================
+//  oktopios-framework — Routing & Contrôleurs
+//  S'appuie sur le namespace natif `Server` (oktopios >= 0.12.0).
+//  Chargé via :  use "oktopios_framework/routing.okp"
+//
+//  - Router  : enregistrement fluide de routes + démarrage du serveur
+//  - Response: fabrique de réponses (texte / html / json / statut),
+//              évite l'ambiguïté `return { ... }` du langage
+//
+//  Un contrôleur est une fonction (ou méthode) qui reçoit la requête
+//  { method, path, query, params, body } et renvoie :
+//    - une chaîne           -> 200 text/html
+//    - res.json(x)          -> 200 application/json
+//    - res.status(c, body)  -> code c
+// =====================================================================
+inject Server
+
+class Router {
+    fun get(path: string, handler: any): Router {
+        Server.get(path, handler)
+        return this
+    }
+    fun post(path: string, handler: any): Router {
+        Server.post(path, handler)
+        return this
+    }
+    fun put(path: string, handler: any): Router {
+        Server.put(path, handler)
+        return this
+    }
+    fun delete(path: string, handler: any): Router {
+        Server.delete(path, handler)
+        return this
+    }
+    // Démarre le serveur (bloquant)
+    fun run(port: int) {
+        Server.run(port)
+    }
+    fun routes(): any {
+        return Server.routes()
+    }
+}
+
+class Response {
+    // JSON (sérialisé par le serveur natif)
+    fun json(data: any): any {
+        var r = { "json": data }
+        return r
+    }
+    // Texte brut (200)
+    fun text(s: string): any {
+        var r = { "body": s }
+        return r
+    }
+    // HTML explicite
+    fun html(s: string): any {
+        var entetes = { "Content-Type": "text/html; charset=utf-8" }
+        var r = { "body": s, "headers": entetes }
+        return r
+    }
+    // Statut personnalisé
+    fun status(code: int, body: string): any {
+        var r = { "status": code, "body": body }
+        return r
+    }
+    // Redirection
+    fun redirect(url: string): any {
+        var entetes = { "Location": url }
+        var r = { "status": 302, "headers": entetes, "body": "" }
+        return r
+    }
+}
