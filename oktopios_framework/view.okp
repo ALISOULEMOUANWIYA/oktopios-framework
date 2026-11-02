@@ -1,0 +1,44 @@
+// =====================================================================
+//  oktopios-framework — Couche Vue (templates HTML)
+//  S'appuie sur le namespace natif `Template` (oktopios >= 0.8.0).
+//  Chargé via :  use "oktopios_framework/view.okp"
+//
+//  - View : rend des fichiers template d'un dossier, avec layout optionnel
+//           (héritage : le rendu de la page est injecté dans {{content}}
+//            du layout).
+//  Syntaxe des templates : {{variable}} et {{variable|valeur_par_defaut}}.
+// =====================================================================
+inject Template
+inject Map
+
+class View {
+    var dir: string      // dossier des templates (ex: "templates")
+    var layout: string   // nom du fichier layout dans `dir`, "" si aucun
+
+    fun __construct(dir: string) {
+        this.dir = dir
+        this.layout = ""
+    }
+
+    // Définit un layout commun (fichier du dossier `dir`) contenant {{content}}
+    fun setLayout(name: string): View {
+        this.layout = name
+        return this
+    }
+
+    fun chemin(name: string): string {
+        return this.dir + "/" + name
+    }
+
+    // Rend `name` avec `vars`. Si un layout est défini, le rendu de la page
+    // est inséré dans {{content}} du layout (les autres variables restent
+    // disponibles dans le layout).
+    fun render(name: string, vars: any): string {
+        var corps = Template.fromFile(this.chemin(name), vars)
+        if (this.layout != "") {
+            var fusion = Map.set(vars, "content", corps)
+            return Template.fromFile(this.chemin(this.layout), fusion)
+        }
+        return corps
+    }
+}

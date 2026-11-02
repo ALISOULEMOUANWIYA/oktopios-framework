@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0] — Couche Vue : templates HTML
+
+### Ajouté
+- `oktopios_framework/view.okp` : classe **`View`** — rend des fichiers template
+  d'un dossier via le namespace natif `Template`, avec **layout** optionnel
+  (héritage : le rendu de la page s'insère dans `{{content}}` du layout).
+- Démo `examples/web_views.okp` + templates `examples/templates/` (layout + page).
+
 ## [0.2.0] — Routing & contrôleurs
 
 ### Ajouté

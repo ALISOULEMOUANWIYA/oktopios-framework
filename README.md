@@ -26,7 +26,7 @@ Django tire Python et Symfony tire PHP.
 - ✅ **ORM** (via `oktopios-orm`) — modèles décorés, migrations, query-builder
 - ✅ **Configuration** par environnement (`.env.local`, `.env.prod`)
 - ✅ **Routing + contrôleurs** (serveur HTTP via le namespace natif `Server`)
-- ⏳ Moteur de templates (vues)
+- ✅ **Moteur de templates** (vues HTML, layout)
 - ⏳ Formulaires / validation, Auth, CLI / scaffolding
 
 ## Structure
@@ -97,6 +97,29 @@ Un **contrôleur** est une fonction `(req) -> réponse`. `req` est un map
 
 `Router` : `get` / `post` / `put` / `delete` (chaînables) + `run(port)`.
 Démo complète : `examples/web.okp`.
+
+## Vue — templates HTML 🖼️
+
+```okp
+use "oktopios_framework/view.okp"
+
+var vue = new View("templates")     // dossier des templates
+vue.setLayout("layout.html")        // layout commun contenant {{content}}
+
+var html = vue.render("home.html", { "title": "Accueil", "nom": "Awa" })
+```
+
+Les templates utilisent `{{variable}}` et `{{variable|defaut}}`. Avec un layout,
+le rendu de la page est inséré dans `{{content}}` du layout (les autres variables
+y restent disponibles). Un contrôleur renvoie directement la chaîne HTML :
+
+```okp
+fun home(req: any): any {
+    return vue.render("home.html", { "title": "Accueil", "nom": "Awa" })
+}
+```
+
+Démo complète : `examples/web_views.okp` (+ `examples/templates/`).
 
 ## Configuration `.env` (façon Symfony)
 

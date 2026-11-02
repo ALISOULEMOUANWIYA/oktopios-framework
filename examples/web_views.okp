@@ -1,0 +1,16 @@
+// Démo Vue : un contrôleur rend un template HTML (avec layout) et le sert.
+// Lancer depuis la racine :  okp examples/web_views.okp
+use "oktopios_framework/routing.okp"
+use "oktopios_framework/view.okp"
+
+var vue = new View("examples/templates")
+vue.setLayout("layout.html")
+
+fun home(req: any): any {
+    var data = { "title": "Accueil", "nom": "Awa" }
+    return vue.render("home.html", data)
+}
+
+var router = new Router()
+router.get("/", home)
+router.run(8071)
