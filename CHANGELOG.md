@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0] — Formulaires & validation
+
+### Ajouté
+- `oktopios_framework/forms.okp` : classe **`Form`** — lie les données d'une
+  requête (`req.body`, un map) à un modèle par réflexion (`bind`), puis valide
+  ses champs d'après leurs décorateurs :
+  - `@NotNull` — champ requis ;
+  - `@Email` — format e-mail ;
+  - `@Min(n)` — valeur numérique ≥ n ;
+  - `@MinLength(n)` / `@MaxLength(n)` — longueur de chaîne.
+- `Form.validate(entity)` retourne la liste des erreurs (vide = valide) ;
+  `Form.isValid(entity)` retourne un booléen.
+- Démo `examples/forms_demo.okp` (cas invalide + cas valide).
+
 ## [0.4.0] — Middleware (pipeline avant / après)
 
 ### Ajouté

@@ -1,0 +1,86 @@
+// =====================================================================
+//  oktopios-framework — Formulaires & validation
+//  Lie les données d'une requête à un modèle (par réflexion) et valide
+//  ses champs d'après des décorateurs. Chargé via :
+//    use "oktopios_framework/forms.okp"
+//
+//  Décorateurs de validation (sur les champs du modèle) :
+//    @NotNull              champ requis (non null)
+//    @Email                format e-mail
+//    @Min(n)               valeur numérique >= n
+//    @MaxLength(n)         longueur de chaîne <= n
+//    @MinLength(n)         longueur de chaîne >= n
+// =====================================================================
+inject Type
+inject Regex
+inject String
+inject Map
+
+class Form {
+    // Remplit `entity` depuis un map `data` (clés = noms de champs).
+    fun bind(entity: any, data: any): any {
+        for (f in Type.fields(entity)) {
+            if (Map.has(data, f) == true) {
+                Type.set(entity, f, Map.get(data, f))
+            }
+        }
+        return entity
+    }
+
+    // Renvoie la liste des erreurs (vide = valide).
+    fun validate(entity: any): any {
+        var erreurs = []
+        for (f in Type.fields(entity)) {
+            var valeur = Type.get(entity, f)
+
+            if (Type.fieldAnnotation(entity, f, "NotNull") != null) {
+                if (valeur == null) {
+                    erreurs = erreurs + [f + " est requis"]
+                }
+            }
+
+            if (Type.fieldAnnotation(entity, f, "Email") != null) {
+                if (valeur != null) {
+                    if (Regex.test("^[^@ ]+@[^@ ]+[.][^@ ]+$", valeur) == false) {
+                        erreurs = erreurs + [f + " doit etre un email valide"]
+                    }
+                }
+            }
+
+            var mn = Type.fieldAnnotation(entity, f, "Min")
+            if (mn != null) {
+                if (valeur != null) {
+                    if (valeur < mn[0]) {
+                        erreurs = erreurs + [f + " doit etre >= " + mn[0]]
+                    }
+                }
+            }
+
+            var mxl = Type.fieldAnnotation(entity, f, "MaxLength")
+            if (mxl != null) {
+                if (valeur != null) {
+                    if (String.length(valeur) > mxl[0]) {
+                        erreurs = erreurs + [f + " depasse " + mxl[0] + " caracteres"]
+                    }
+                }
+            }
+
+            var mnl = Type.fieldAnnotation(entity, f, "MinLength")
+            if (mnl != null) {
+                if (valeur != null) {
+                    if (String.length(valeur) < mnl[0]) {
+                        erreurs = erreurs + [f + " doit faire au moins " + mnl[0] + " caracteres"]
+                    }
+                }
+            }
+        }
+        return erreurs
+    }
+
+    fun isValid(entity: any): bool {
+        var errs = this.validate(entity)
+        var n = 0
+        for (e in errs) { n = n + 1 }
+        return n == 0
+    }
+}

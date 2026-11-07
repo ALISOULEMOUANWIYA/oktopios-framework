@@ -1,0 +1,38 @@
+// Démo : Formulaires & validation (oktopios-framework 0.5.0)
+use "oktopios_framework/forms.okp"
+
+@Entity("users")
+class User {
+    @Id
+    var id: any
+
+    @NotNull
+    @MinLength(3)
+    @MaxLength(20)
+    var nom: any
+
+    @NotNull
+    @Email
+    var email: any
+
+    @Min(18)
+    var age: any
+}
+
+var form = new Form()
+
+print("=== Cas invalide ===")
+var u1 = new User()
+form.bind(u1, {"nom": "Al", "email": "pas-un-email", "age": 15})
+var errs1 = form.validate(u1)
+for (e in errs1) { print("  - " + e) }
+print("isValid = " + form.isValid(u1))
+
+print("")
+print("=== Cas valide ===")
+var u2 = new User()
+form.bind(u2, {"nom": "Mouanwiya", "email": "mouan@example.com", "age": 25})
+var errs2 = form.validate(u2)
+print("nb erreurs = " + errs2)
+print("isValid = " + form.isValid(u2))
+print("nom lié = " + u2.nom)

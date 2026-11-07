@@ -28,7 +28,8 @@ Django tire Python et Symfony tire PHP.
 - ✅ **Routing + contrôleurs** (serveur HTTP via le namespace natif `Server`)
 - ✅ **Moteur de templates** (vues HTML, layout)
 - ✅ **Middleware** (pipeline avant/après : logger, CORS, gardes)
-- ⏳ Formulaires / validation, Auth, CLI / scaffolding
+- ✅ **Formulaires & validation** (binding `req.body` → modèle + décorateurs de validation)
+- ⏳ Auth, CLI / scaffolding
 
 ## Structure
 
@@ -147,6 +148,36 @@ router.run(8000)
 - **avant** : `fun(req) -> réponse | null` (null = passer au suivant / au contrôleur)
 - **après** : `fun(req, resp) -> resp` (reçoit et renvoie la réponse, éventuellement modifiée)
 - fournis : `logRequest` (avant), `corsAllowAll` (après). Démo : `examples/web_mw.okp`.
+
+## Formulaires & validation ✅
+
+Lie les données d'une requête (`req.body`, un map) à un modèle par réflexion,
+puis valide ses champs d'après leurs **décorateurs** :
+
+```okp
+use "oktopios_framework/forms.okp"
+
+class User {
+    @NotNull @MinLength(3) @MaxLength(20)
+    var nom: any
+    @NotNull @Email
+    var email: any
+    @Min(18)
+    var age: any
+}
+
+var form = new Form()
+var u = new User()
+form.bind(u, req["body"])           // remplit u depuis le map de la requête
+
+if (form.isValid(u) == false) {
+    for (e in form.validate(u)) { print(e) }   // liste des messages d'erreur
+}
+```
+
+Décorateurs reconnus : `@NotNull`, `@Email`, `@Min(n)`, `@MinLength(n)`,
+`@MaxLength(n)`. `validate(entity)` renvoie la liste des erreurs (vide = valide),
+`isValid(entity)` un booléen. Démo : `examples/forms_demo.okp`.
 
 ## Configuration `.env` (façon Symfony)
 

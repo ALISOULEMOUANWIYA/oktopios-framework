@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oktopios-framework"
-version = "0.4.0"
+version = "0.5.0"
 description = "Framework web MVC pour le langage Oktopios (facon Django / Symfony) — ORM, config par environnement, et plus"
 readme = "README.md"
 license = { file = "LICENSE" }
