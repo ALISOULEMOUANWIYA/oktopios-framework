@@ -14,22 +14,64 @@
 //    - res.status(c, body)  -> code c
 // =====================================================================
 inject Server
+inject Log
+inject Type
+inject Map
 
+// Un middleware « avant »  : fun(req) -> réponse | null   (null = continuer)
+// Un middleware « après »  : fun(req, resp) -> resp        (transforme la réponse)
 class Router {
+    var mws: any      // pipeline avant
+    var afters: any   // pipeline après
+
+    fun __construct() {
+        this.mws = []
+        this.afters = []
+    }
+
+    // Ajoute un middleware « avant » (peut court-circuiter en renvoyant une réponse)
+    fun use(mw: any): Router {
+        this.mws = this.mws + [mw]
+        return this
+    }
+    // Ajoute un middleware « après » (reçoit la réponse et la renvoie, éventuellement modifiée)
+    fun after(mw: any): Router {
+        this.afters = this.afters + [mw]
+        return this
+    }
+
+    // Exécute le pipeline pour une requête : avant -> contrôleur -> après
+    fun dispatch(handler: any, req: any): any {
+        for (mw in this.mws) {
+            var court = mw(req)
+            if (court != null) { return court }
+        }
+        var resp = handler(req)
+        for (amw in this.afters) {
+            var nouveau = amw(req, resp)   // temp : `resp = amw(...)` direct non supporté
+            resp = nouveau
+        }
+        return resp
+    }
+
     fun get(path: string, handler: any): Router {
-        Server.get(path, handler)
+        var self = this
+        Server.get(path, lambda(req: any) => self.dispatch(handler, req))
         return this
     }
     fun post(path: string, handler: any): Router {
-        Server.post(path, handler)
+        var self = this
+        Server.post(path, lambda(req: any) => self.dispatch(handler, req))
         return this
     }
     fun put(path: string, handler: any): Router {
-        Server.put(path, handler)
+        var self = this
+        Server.put(path, lambda(req: any) => self.dispatch(handler, req))
         return this
     }
     fun delete(path: string, handler: any): Router {
-        Server.delete(path, handler)
+        var self = this
+        Server.delete(path, lambda(req: any) => self.dispatch(handler, req))
         return this
     }
     // Démarre le serveur (bloquant)
@@ -69,4 +111,27 @@ class Response {
         var r = { "status": 302, "headers": entetes, "body": "" }
         return r
     }
+}
+
+
+// --- Middlewares prêts à l'emploi ---
+
+// « avant » : journalise chaque requête (méthode + chemin), puis continue.
+fun logRequest(req: any): any {
+    Log.info(req["method"] + " " + req["path"])
+    return null
+}
+
+// « après » : ajoute l'en-tête CORS (origine *) à la réponse.
+fun corsAllowAll(req: any, resp: any): any {
+    if (Type.isString(resp) == true) {
+        var entetes = { "Access-Control-Allow-Origin": "*" }
+        var wrap = { "body": resp, "headers": entetes }
+        return wrap
+    }
+    var h = resp["headers"]
+    if (h == null) { h = {} }
+    var h2 = Map.set(h, "Access-Control-Allow-Origin", "*")
+    var r2 = Map.set(resp, "headers", h2)
+    return r2
 }

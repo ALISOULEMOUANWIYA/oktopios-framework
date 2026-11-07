@@ -27,6 +27,7 @@ Django tire Python et Symfony tire PHP.
 - ✅ **Configuration** par environnement (`.env.local`, `.env.prod`)
 - ✅ **Routing + contrôleurs** (serveur HTTP via le namespace natif `Server`)
 - ✅ **Moteur de templates** (vues HTML, layout)
+- ✅ **Middleware** (pipeline avant/après : logger, CORS, gardes)
 - ⏳ Formulaires / validation, Auth, CLI / scaffolding
 
 ## Structure
@@ -120,6 +121,32 @@ fun home(req: any): any {
 ```
 
 Démo complète : `examples/web_views.okp` (+ `examples/templates/`).
+
+## Middleware 🧱
+
+Pipeline **avant** (`use`, peut court-circuiter) et **après** (`after`, transforme
+la réponse) :
+
+```okp
+use "oktopios_framework/routing.okp"
+
+var res = new Response()
+fun guard(req: any): any {
+    if (req["path"] == "/admin") { return res.status(401, "Non autorise") }
+    return null                    // null = continuer
+}
+
+var router = new Router()
+router.use(logRequest)             // middleware fourni : journalise la requête
+router.use(guard)                  // garde : court-circuite si réponse != null
+router.after(corsAllowAll)         // middleware fourni : ajoute l'en-tête CORS
+router.get("/", home)
+router.run(8000)
+```
+
+- **avant** : `fun(req) -> réponse | null` (null = passer au suivant / au contrôleur)
+- **après** : `fun(req, resp) -> resp` (reçoit et renvoie la réponse, éventuellement modifiée)
+- fournis : `logRequest` (avant), `corsAllowAll` (après). Démo : `examples/web_mw.okp`.
 
 ## Configuration `.env` (façon Symfony)
 

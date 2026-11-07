@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0] — Middleware (pipeline avant / après)
+
+### Ajouté
+- `Router.use(mw)` : middleware **avant** `fun(req) -> réponse|null` (null = continuer,
+  sinon court-circuite) — idéal pour les gardes d'authentification, le logging.
+- `Router.after(mw)` : middleware **après** `fun(req, resp) -> resp` — transforme la
+  réponse (ex. en-têtes CORS).
+- Middlewares fournis : `logRequest` (journalise via `Log`) et `corsAllowAll`
+  (ajoute `Access-Control-Allow-Origin: *`).
+- Démo `examples/web_mw.okp`.
+
 ## [0.3.0] — Couche Vue : templates HTML
 
 ### Ajouté

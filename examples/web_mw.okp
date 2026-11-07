@@ -1,0 +1,20 @@
+use "oktopios_framework/routing.okp"
+
+var res = new Response()
+
+fun guard(req: any): any {
+    if (req["path"] == "/admin") {
+        return res.status(401, "Non autorise")
+    }
+    return null
+}
+fun home(req: any): any { return "accueil" }
+fun admin(req: any): any { return "secret" }
+
+var router = new Router()
+router.use(logRequest)
+router.use(guard)
+router.after(corsAllowAll)
+router.get("/", home)
+router.get("/admin", admin)
+router.run(8072)
