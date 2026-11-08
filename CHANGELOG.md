@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.0] — Authentification & sessions
+
+### Ajouté
+- `oktopios_framework/auth.okp` :
+  - classe **`Auth`** — hachage de mot de passe salé (`hashPassword` / `verify`
+    via SHA-256 + sel aléatoire), sessions en mémoire (`login` / `userFor` /
+    `logout`), lecture du token depuis la requête (cookie `oktopios_session`
+    ou `Authorization: Bearer ...`), `check(req)` → utilisateur courant, et
+    `cookieHeader(token)` pour poser le cookie ;
+  - **`authService`** — instance partagée entre l'app et le middleware ;
+  - **`requireAuth`** — middleware « avant » renvoyant `401` si non authentifié.
+- Démo `examples/web_auth.okp` (login + cookie + route protégée).
+
+### Changé
+- Dépendance relevée à **`oktopios>=0.14.0`** (la requête expose désormais
+  `headers`, requis pour lire cookie / Bearer).
+
 ## [0.6.0] — CLI & scaffolding
 
 ### Ajouté

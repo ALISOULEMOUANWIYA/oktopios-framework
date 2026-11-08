@@ -30,7 +30,7 @@ Django tire Python et Symfony tire PHP.
 - ✅ **Middleware** (pipeline avant/après : logger, CORS, gardes)
 - ✅ **Formulaires & validation** (binding `req.body` → modèle + décorateurs de validation)
 - ✅ **CLI & scaffolding** (`oktopios new`, générateurs, `serve`, `migrate`)
-- ⏳ Auth
+- ✅ **Auth & sessions** (hash salé, sessions, cookie/Bearer, garde `requireAuth`)
 
 ## Structure
 
@@ -211,6 +211,45 @@ oktopios make:controller Blog                   # -> controllers/blog.okp
 oktopios migrate                                # exécute bin/migrate.okp
 oktopios version
 ```
+
+## Authentification & sessions 🔐
+
+Hachage de mot de passe salé, sessions en mémoire, et un middleware de garde.
+Le token est lu depuis le cookie `oktopios_session` ou l'en-tête
+`Authorization: Bearer ...` (nécessite `oktopios>=0.14.0`).
+
+```okp
+use "oktopios_framework/routing.okp"
+use "oktopios_framework/auth.okp"
+
+var res = new Response()
+
+fun login(req: any): any {
+    var q = req["query"]
+    // ... vérifier q["user"] / q["pw"] contre votre base ...
+    var token = authService.login(q["user"])          // ouvre une session
+    var entetes = { "Set-Cookie": authService.cookieHeader(token) }
+    var r = { "body": "Connecte", "headers": entetes }
+    return r
+}
+
+fun profile(req: any): any {
+    return "Profil de " + authService.check(req)       // utilisateur courant
+}
+
+var pub = new Router()
+pub.get("/login", login)                               // route publique
+
+var priv = new Router()
+priv.use(requireAuth)                                  // garde : 401 si non connecté
+priv.get("/profile", profile)
+priv.run(8000)
+```
+
+- `authService.hashPassword(pw)` → `"sel$empreinte"` à stocker ; `verify(pw, stored)` → booléen.
+- `authService.login(user)` → token ; `check(req)` → utilisateur ou `null` ; `logout(token)`.
+- `requireAuth` garde toutes les routes de **son** routeur (enregistrez les routes
+  publiques sur un routeur distinct). Démo : `examples/web_auth.okp`.
 
 ## Configuration `.env` (façon Symfony)
 

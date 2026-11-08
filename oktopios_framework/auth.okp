@@ -1,0 +1,124 @@
+// =====================================================================
+//  oktopios-framework — Authentification & sessions
+//  Chargé via :  use "oktopios_framework/auth.okp"
+//
+//  - Auth         : hachage de mot de passe (salé), sessions en mémoire,
+//                   lecture du token depuis la requête (cookie / Bearer).
+//  - authService  : instance partagée (le middleware et l'app l'utilisent).
+//  - requireAuth  : middleware « avant » qui renvoie 401 si non authentifié.
+//
+//  Nécessite oktopios >= 0.14.0 (la requête expose `headers`).
+// =====================================================================
+inject Hash
+inject Random
+inject Map
+inject String
+
+class Auth {
+    var sessions: any      // token -> nom d'utilisateur
+
+    fun __construct() {
+        this.sessions = {}
+    }
+
+    // --- Mots de passe (sel aléatoire + SHA-256) -----------------------
+    // Retourne "sel$empreinte" ; à stocker tel quel en base.
+    fun hashPassword(pw: any): any {
+        var sel = Random.uuid()
+        var empreinte = Hash.sha256(sel + pw)
+        return sel + "$" + empreinte
+    }
+
+    // Vérifie un mot de passe clair contre un "sel$empreinte" stocké.
+    fun verify(pw: any, stored: any): bool {
+        if (stored == null) { return false }
+        if (String.contains(stored, "$") == false) { return false }
+        var parts = String.split(stored, "$")
+        var sel = parts[0]
+        var attendu = parts[1]
+        var calc = Hash.sha256(sel + pw)
+        return calc == attendu
+    }
+
+    // --- Sessions ------------------------------------------------------
+    // Ouvre une session pour `username`, retourne le token à poser en cookie.
+    fun login(username: any): any {
+        var token = Random.uuid()
+        var s = Map.set(this.sessions, token, username)
+        this.sessions = s
+        return token
+    }
+
+    // Nom d'utilisateur associé au token, ou null.
+    fun userFor(token: any): any {
+        if (token == null) { return null }
+        if (Map.has(this.sessions, token) == true) {
+            return Map.get(this.sessions, token)
+        }
+        return null
+    }
+
+    // Ferme la session.
+    fun logout(token: any): any {
+        var s = Map.remove(this.sessions, token)
+        this.sessions = s
+        return null
+    }
+
+    // --- Lecture du token dans la requête ------------------------------
+    // Cherche "Authorization: Bearer <token>" puis le cookie oktopios_session.
+    fun tokenFromRequest(req: any): any {
+        var headers = req["headers"]
+        if (headers == null) { return null }
+
+        if (Map.has(headers, "authorization") == true) {
+            var a = Map.get(headers, "authorization")
+            if (String.startsWith(a, "Bearer ") == true) {
+                return String.substring(a, 7, String.length(a))
+            }
+        }
+        if (Map.has(headers, "cookie") == true) {
+            var c = Map.get(headers, "cookie")
+            return this.parseCookie(c, "oktopios_session")
+        }
+        return null
+    }
+
+    // Extrait la valeur d'un cookie nommé depuis l'en-tête Cookie.
+    fun parseCookie(cookieHeader: any, name: any): any {
+        var pairs = String.split(cookieHeader, ";")
+        for (p in pairs) {
+            var brut = String.trim(p)
+            var kv = String.split(brut, "=")
+            if (kv[0] == name) { return kv[1] }
+        }
+        return null
+    }
+
+    // Utilisateur courant de la requête (ou null si non authentifié).
+    fun check(req: any): any {
+        var t = this.tokenFromRequest(req)
+        return this.userFor(t)
+    }
+
+    // Fabrique l'en-tête Set-Cookie pour poser le token de session.
+    fun cookieHeader(token: any): any {
+        return "oktopios_session=" + token + "; Path=/; HttpOnly"
+    }
+}
+
+
+// Instance partagée : le middleware `requireAuth` et votre application
+// doivent utiliser la MÊME instance pour voir les mêmes sessions.
+var authService = new Auth()
+
+
+// Middleware « avant » : 401 si la requête n'est pas authentifiée.
+fun requireAuth(req: any): any {
+    var user = authService.check(req)
+    if (user == null) {
+        var r = { "status": 401, "body": "401 Non autorise" }
+        return r
+    }
+    return null
+}

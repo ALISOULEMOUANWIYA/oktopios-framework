@@ -1,0 +1,51 @@
+// Démo oktopios-framework — Authentification & sessions.
+// Lancer depuis la racine du projet :  okp examples/web_auth.okp
+//
+//   GET /login?user=mouan&pw=secret   -> pose un cookie de session
+//   GET /profile                       -> route protégée (401 sans session)
+use "oktopios_framework/routing.okp"
+use "oktopios_framework/auth.okp"
+inject Map
+
+var res = new Response()
+
+// « Base » utilisateurs : nom -> mot de passe haché (en vrai : en BDD).
+var users = {}
+var hp = authService.hashPassword("secret")
+users = Map.set(users, "mouan", hp)
+
+// Route publique : vérifie les identifiants et ouvre une session (cookie).
+fun login(req: any): any {
+    var q = req["query"]
+    var user = q["user"]
+    var pw = q["pw"]
+    if (Map.has(users, user) == false) {
+        return res.status(401, "Utilisateur inconnu")
+    }
+    var stored = Map.get(users, user)
+    if (authService.verify(pw, stored) == false) {
+        return res.status(401, "Mot de passe invalide")
+    }
+    var token = authService.login(user)
+    var entetes = { "Set-Cookie": authService.cookieHeader(token) }
+    var r = { "body": "Connecte en tant que " + user, "headers": entetes }
+    return r
+}
+
+// Route protégée : requireAuth renvoie 401 si pas de session valide.
+fun profile(req: any): any {
+    var user = authService.check(req)
+    return "<h1>Profil prive de " + user + "</h1>"
+}
+
+// Routeur public (sans garde) pour /login
+var pub = new Router()
+pub.get("/login", login)
+
+// Routeur protégé (garde requireAuth) pour /profile
+var priv = new Router()
+priv.use(requireAuth)
+priv.get("/profile", profile)
+
+print("Auth demo sur http://localhost:8000  (/login?user=mouan&pw=secret puis /profile)")
+priv.run(8000)
