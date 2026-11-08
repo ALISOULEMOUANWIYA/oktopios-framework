@@ -31,6 +31,7 @@ Django tire Python et Symfony tire PHP.
 - ✅ **Formulaires & validation** (binding `req.body` → modèle + décorateurs de validation)
 - ✅ **CLI & scaffolding** (`oktopios new`, générateurs, `serve`, `migrate`)
 - ✅ **Auth & sessions** (hash salé, sessions, cookie/Bearer, garde `requireAuth`)
+- ✅ **App de référence `blog_complet` + tests e2e** (toutes les couches, vérifiées via `pytest`)
 
 ## Structure
 
@@ -250,6 +251,42 @@ priv.run(8000)
 - `authService.login(user)` → token ; `check(req)` → utilisateur ou `null` ; `logout(token)`.
 - `requireAuth` garde toutes les routes de **son** routeur (enregistrez les routes
   publiques sur un routeur distinct). Démo : `examples/web_auth.okp`.
+
+## App de référence : blog complet 📰
+
+[`examples/blog_complet.okp`](examples/blog_complet.okp) combine **toutes** les
+couches en une seule application vérifiable :
+
+| Couche | Utilisé pour |
+|---|---|
+| ORM (`oktopios-orm`) | modèle `Article` décoré, migration, `Repo.save/all/findBy` |
+| Routing | routeur **public** (`/`, `/articles/:id`, `/login`) + **protégé** (`/admin/create`) |
+| Middleware | `logRequest` sur les deux routeurs |
+| Vues | `View` + layout (`blog_layout.html`, `blog_list.html`, `blog_show.html`) |
+| Formulaires | `Form.bind` + `validate` (décorateurs `@NotNull`/`@MinLength`/`@MaxLength`) |
+| Auth | `/login` pose un cookie, `requireAuth` garde l'espace admin |
+
+```bash
+okp examples/blog_complet.okp     # http://localhost:8000
+```
+
+Parcours : `/` liste → `/login?user=admin&pw=admin123` → `/admin/create?titre=..&contenu=..`
+(protégé, validé, redirige vers `/articles/:id`).
+
+## Tests d'intégration end-to-end ✅
+
+Le dépôt inclut une **suite e2e** qui démarre réellement le blog et l'interroge
+en HTTP (liste, détail, 404, login + cookie, création protégée 401/302,
+validation 422) — le socle de robustesse de l'écosystème.
+
+```bash
+pip install oktopios-framework[test]   # ou: pip install pytest
+pytest                                 # depuis la racine du dépôt
+```
+
+En développement (dépôts `oktopios`, `oktopios-orm`, `oktopios-framework` côte à
+côte), les sources frères sont ajoutées automatiquement au `PYTHONPATH` du
+serveur de test — aucune installation requise.
 
 ## Configuration `.env` (façon Symfony)
 

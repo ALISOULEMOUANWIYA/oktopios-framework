@@ -4,3 +4,5 @@ __pycache__/
 dist/
 build/
 *.db
+_blog_e2e_tmp.okp
+.pytest_cache/

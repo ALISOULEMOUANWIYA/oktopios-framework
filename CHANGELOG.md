@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.8.0] — App de référence « blog complet » + tests e2e
+
+### Ajouté
+- **`examples/blog_complet.okp`** — application de référence combinant **toutes**
+  les couches de l'écosystème dans un seul parcours vérifiable : ORM (modèle
+  décoré, migration, `Repo`), routing (routeurs public + protégé), middleware
+  (`logRequest`), vues (`View` + layout), formulaires (`Form` : binding +
+  validation par décorateurs) et auth (login, sessions, cookie, `requireAuth`).
+  Templates `examples/templates/blog_layout.html`, `blog_list.html`, `blog_show.html`.
+- **Suite de tests d'intégration end-to-end** (`tests/test_blog_e2e.py`) : démarre
+  réellement le serveur et exerce le parcours complet via HTTP (liste, détail,
+  404, login + cookie, création protégée 401/302, validation 422). Lançable avec
+  `pytest` ; extra `test` (`pip install oktopios-framework[test]`).
+
+### Changé
+- Dépendances relevées : **`oktopios>=0.16.0`** (concat de listes indexable,
+  `execSQL`→id, en-têtes) et **`oktopios-orm>=0.2.0`** (clé primaire auto-générée).
+
 ## [0.7.0] — Authentification & sessions
 
 ### Ajouté

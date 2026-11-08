@@ -1,0 +1,156 @@
+// =====================================================================
+//  Blog complet — exemple de référence oktopios-framework
+//  Combine TOUTES les couches de l'écosystème :
+//    - ORM          (oktopios-orm) : modèle décoré, migration, Repo
+//    - Routing      (Router)       : routes publiques + protégées
+//    - Middleware   (logRequest)   : journalisation
+//    - Vues         (View)         : templates HTML + layout
+//    - Formulaires  (Form)         : binding + validation par décorateurs
+//    - Auth         (Auth)         : login, sessions, cookie, requireAuth
+//
+//  Lancer depuis la racine du projet :  okp examples/blog_complet.okp
+//
+//  Parcours :
+//    GET /                                  liste des articles (vue)
+//    GET /articles/:id                      détail d'un article (vue)
+//    GET /login?user=admin&pw=admin123      ouvre une session (cookie)
+//    GET /admin/create?titre=..&contenu=..  crée un article (protégé, validé)
+//    GET /logout                            ferme la session
+// =====================================================================
+use "oktopios_orm/orm.okp"
+use "oktopios_framework/routing.okp"
+use "oktopios_framework/auth.okp"
+use "oktopios_framework/view.okp"
+use "oktopios_framework/forms.okp"
+inject Map
+inject File
+
+// ---------------------------------------------------------------------
+//  Modèle
+// ---------------------------------------------------------------------
+@Entity("articles")
+class Article {
+    @Id
+    var id: int
+
+    @NotNull
+    @MinLength(3)
+    @MaxLength(120)
+    @Column("titre")
+    var titre: string
+
+    @NotNull
+    @MinLength(3)
+    @Column("contenu")
+    var contenu: string
+}
+
+// ---------------------------------------------------------------------
+//  Base de données : migration + données de départ
+// ---------------------------------------------------------------------
+var DB = "blog_complet.db"
+if (File.exists(DB) == true) { File.remove(DB) }   // repart propre à chaque lancement
+
+var schema = new Schema()
+schema.migrate(DB, new Article())
+
+var repo = new Repo(DB, new Article())
+
+var seed = new Article()
+seed.titre = "Bienvenue"
+seed.contenu = "Premier article du blog Oktopios."
+repo.save(seed)
+
+// Un admin « en base » (mot de passe haché et salé).
+var adminHash = authService.hashPassword("admin123")
+
+// ---------------------------------------------------------------------
+//  Services partagés
+// ---------------------------------------------------------------------
+var res = new Response()
+var form = new Form()
+var vue = new View("examples/templates")
+vue.setLayout("blog_layout.html")
+
+// ---------------------------------------------------------------------
+//  Contrôleurs
+// ---------------------------------------------------------------------
+fun listeArticles(req: any): any {
+    var articles = repo.all()
+    var lignes = ""
+    var n = 0
+    for (a in articles) {
+        lignes = lignes + "<li><a href='/articles/" + a.id + "'>" + a.titre + "</a></li>"
+        n = n + 1
+    }
+    var vars = { "titre": "Accueil", "articles": lignes, "compteur": n }
+    return vue.render("blog_list.html", vars)
+}
+
+fun montrerArticle(req: any): any {
+    var p = req["params"]
+    var trouves = repo.findBy("id", p["id"])
+    var n = 0
+    for (x in trouves) { n = n + 1 }
+    if (n == 0) {
+        return res.status(404, "Article introuvable")
+    }
+    var a = trouves[0]
+    var vars = { "titre": a.titre, "contenu": a.contenu }
+    return vue.render("blog_show.html", vars)
+}
+
+// Protégé par requireAuth. Lie la requête -> modèle, valide, enregistre.
+fun creerArticle(req: any): any {
+    var art = new Article()
+    form.bind(art, req["query"])
+    var erreurs = form.validate(art)
+    var n = 0
+    for (e in erreurs) { n = n + 1 }
+    if (n > 0) {
+        var msg = ""
+        for (e in erreurs) { msg = msg + e + " | " }
+        return res.status(422, "Validation echouee : " + msg)
+    }
+    var nouvelId = repo.save(art)
+    return res.redirect("/articles/" + nouvelId)
+}
+
+// Vérifie les identifiants et pose le cookie de session.
+fun login(req: any): any {
+    var q = req["query"]
+    if (q["user"] != "admin") {
+        return res.status(401, "Utilisateur inconnu")
+    }
+    if (authService.verify(q["pw"], adminHash) == false) {
+        return res.status(401, "Mot de passe invalide")
+    }
+    var token = authService.login("admin")
+    var entetes = { "Set-Cookie": authService.cookieHeader(token) }
+    var r = { "body": "Connecte en tant qu'admin. <a href='/'>Accueil</a>", "headers": entetes }
+    return r
+}
+
+fun logout(req: any): any {
+    var token = authService.tokenFromRequest(req)
+    authService.logout(token)
+    return res.redirect("/")
+}
+
+// ---------------------------------------------------------------------
+//  Routage : routeur public + routeur protégé (requireAuth)
+// ---------------------------------------------------------------------
+var pub = new Router()
+pub.use(logRequest)
+pub.get("/", listeArticles)
+pub.get("/articles/:id", montrerArticle)
+pub.get("/login", login)
+pub.get("/logout", logout)
+
+var priv = new Router()
+priv.use(logRequest)
+priv.use(requireAuth)
+priv.get("/admin/create", creerArticle)
+
+print("Blog complet sur http://localhost:8000")
+priv.run(8000)
