@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1] — Invocation `python -m oktopios_framework`
+
+### Ajouté
+- Point d'entrée module : la CLI s'invoque aussi via
+  **`python -m oktopios_framework ...`** (équivalent à `oktopios ...`). Utile
+  quand le lanceur `oktopios.exe` n'est pas sur le PATH ou est cassé (souci
+  fréquent sous Windows).
+
 ## [0.9.0] — Scaffolding complet `oktopios new --full`
 
 ### Ajouté
