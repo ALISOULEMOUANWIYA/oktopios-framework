@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.3] — `serve` / `migrate` fiables (sans lanceur `okp.exe`)
+
+### Corrigé
+- `oktopios serve` et `oktopios migrate` exécutent l'app via
+  **`python -m vm.main`** (le même interpréteur que la CLI) plutôt que via le
+  lanceur `okp.exe`. Évite l'erreur Windows *« Fatal error in launcher: Unable
+  to find an appended archive »* quand les lanceurs `.exe` de l'installation
+  Python sont cassés. On ne se rabat sur `okp` que si le module `vm` n'est pas
+  importable.
+
 ## [0.9.2] — Port configurable (`serve --port` / `OKTOPIOS_PORT`)
 
 ### Ajouté / Changé

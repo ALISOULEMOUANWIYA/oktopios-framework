@@ -320,7 +320,19 @@ def _write(path, content):
 
 
 def _okp_binary():
-    """Trouve l'exécutable `okp` (ou se rabat sur `python -m vm.main`)."""
+    """Commande pour exécuter un fichier .okp.
+
+    On privilégie `python -m vm.main` (le même interpréteur que la CLI, aucun
+    lanceur intermédiaire) : fiable même quand le lanceur `okp.exe` est absent
+    du PATH ou cassé (souci fréquent sous Windows). On ne se rabat sur `okp`
+    que si le module `vm` n'est pas importable par ce Python.
+    """
+    try:
+        import importlib.util
+        if importlib.util.find_spec("vm") is not None:
+            return [sys.executable, "-m", "vm.main"]
+    except Exception:
+        pass
     from shutil import which
     okp = which("okp")
     if okp:
