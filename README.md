@@ -29,7 +29,8 @@ Django tire Python et Symfony tire PHP.
 - ✅ **Moteur de templates** (vues HTML, layout)
 - ✅ **Middleware** (pipeline avant/après : logger, CORS, gardes)
 - ✅ **Formulaires & validation** (binding `req.body` → modèle + décorateurs de validation)
-- ⏳ Auth, CLI / scaffolding
+- ✅ **CLI & scaffolding** (`oktopios new`, générateurs, `serve`, `migrate`)
+- ⏳ Auth
 
 ## Structure
 
@@ -178,6 +179,38 @@ if (form.isValid(u) == false) {
 Décorateurs reconnus : `@NotNull`, `@Email`, `@Min(n)`, `@MinLength(n)`,
 `@MaxLength(n)`. `validate(entity)` renvoie la liste des erreurs (vide = valide),
 `isValid(entity)` un booléen. Démo : `examples/forms_demo.okp`.
+
+## CLI & scaffolding 🛠️ (façon `django-admin` / `symfony`)
+
+L'installation expose la commande **`oktopios`** :
+
+```bash
+oktopios new monapp            # échafaude un projet complet
+cd monapp
+oktopios serve                 # lance l'app (http://localhost:8000)
+```
+
+`oktopios new` crée une arborescence prête à l'emploi :
+
+```
+monapp/
+├── main.okp                 # point d'entrée (config + router + run)
+├── controllers/home.okp     # contrôleur d'accueil
+├── models/                  # vos modèles
+├── templates/home.html      # vue d'accueil
+├── bin/migrate.okp          # migrations
+├── .env.local  .env.prod    # config par environnement
+└── .gitignore
+```
+
+Autres commandes :
+
+```bash
+oktopios make:model Article --table articles   # -> models/article.okp (décoré)
+oktopios make:controller Blog                   # -> controllers/blog.okp
+oktopios migrate                                # exécute bin/migrate.okp
+oktopios version
+```
 
 ## Configuration `.env` (façon Symfony)
 

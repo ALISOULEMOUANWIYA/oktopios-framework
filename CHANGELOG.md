@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0] — CLI & scaffolding
+
+### Ajouté
+- Commande **`oktopios`** (entry-point du paquet, façon `django-admin` / `symfony`) :
+  - `oktopios new <projet>` — échafaude un projet complet prêt à lancer
+    (`main.okp`, `controllers/`, `models/`, `templates/`, `bin/migrate.okp`,
+    `.env.local` / `.env.prod`, `.gitignore`) ;
+  - `oktopios make:model <Nom> [--table t]` — génère un modèle décoré ;
+  - `oktopios make:controller <Nom>` — génère un contrôleur ;
+  - `oktopios serve [entry]` — lance l'application (`okp main.okp`) ;
+  - `oktopios migrate` — exécute `bin/migrate.okp` ;
+  - `oktopios version` — affiche la version du framework.
+- Module `oktopios_framework/cli.py`.
+
 ## [0.5.0] — Formulaires & validation
 
 ### Ajouté
