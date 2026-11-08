@@ -109,6 +109,193 @@ __pycache__/
 
 
 # --------------------------------------------------------------------------
+# Gabarits « --full » : application structurée (MVC complet)
+# Substitution par placeholders (__APP__ / __DB__) pour éviter les conflits
+# d'accolades avec le code Oktopios.
+# --------------------------------------------------------------------------
+
+FULL_MODEL = '''// Modele — genere par `oktopios new --full`.
+@Entity("articles")
+class Article {
+    @Id
+    var id: int
+
+    @NotNull
+    @MinLength(3)
+    @MaxLength(120)
+    @Column("titre")
+    var titre: string
+
+    @NotNull
+    @MinLength(3)
+    @Column("contenu")
+    var contenu: string
+}
+'''
+
+FULL_CTRL_ARTICLES = '''// Controleur Articles — genere par `oktopios new --full`.
+// Utilise les services globaux definis dans main.okp : repo, vue, res, form.
+
+fun listeArticles(req: any): any {
+    var articles = repo.all()
+    var lignes = ""
+    var n = 0
+    for (a in articles) {
+        lignes = lignes + "<li><a href='/articles/" + a.id + "'>" + a.titre + "</a></li>"
+        n = n + 1
+    }
+    var vars = { "titre": "Accueil", "articles": lignes, "compteur": n }
+    return vue.render("list.html", vars)
+}
+
+fun montrerArticle(req: any): any {
+    var p = req["params"]
+    var trouves = repo.findBy("id", p["id"])
+    var n = 0
+    for (x in trouves) { n = n + 1 }
+    if (n == 0) {
+        return res.status(404, "Article introuvable")
+    }
+    var a = trouves[0]
+    var vars = { "titre": a.titre, "contenu": a.contenu }
+    return vue.render("show.html", vars)
+}
+
+// Protege par requireAuth. Lie la requete -> modele, valide, enregistre.
+fun creerArticle(req: any): any {
+    var art = new Article()
+    form.bind(art, req["query"])
+    var erreurs = form.validate(art)
+    var n = 0
+    for (e in erreurs) { n = n + 1 }
+    if (n > 0) {
+        var msg = ""
+        for (e in erreurs) { msg = msg + e + " | " }
+        return res.status(422, "Validation echouee : " + msg)
+    }
+    var nouvelId = repo.save(art)
+    return res.redirect("/articles/" + nouvelId)
+}
+'''
+
+FULL_CTRL_AUTH = '''// Controleur Auth — genere par `oktopios new --full`.
+// Services globaux (main.okp) : res, adminHash ; authService vient de auth.okp.
+
+fun login(req: any): any {
+    var q = req["query"]
+    if (q["user"] != "admin") {
+        return res.status(401, "Utilisateur inconnu")
+    }
+    if (authService.verify(q["pw"], adminHash) == false) {
+        return res.status(401, "Mot de passe invalide")
+    }
+    var token = authService.login("admin")
+    var entetes = { "Set-Cookie": authService.cookieHeader(token) }
+    var r = { "body": "Connecte en tant qu'admin. <a href='/'>Accueil</a>", "headers": entetes }
+    return r
+}
+
+fun logout(req: any): any {
+    var token = authService.tokenFromRequest(req)
+    authService.logout(token)
+    return res.redirect("/")
+}
+'''
+
+FULL_MAIN = '''// Point d'entree de __APP__ — genere par `oktopios new --full`.
+// Application MVC complete : ORM + Auth + Vues + Formulaires + Middleware.
+// Lancer :  oktopios serve   (ou  okp main.okp)
+//
+//   GET /                                 liste des articles
+//   GET /articles/:id                     detail d'un article
+//   GET /login?user=admin&pw=admin123     ouvre une session (cookie)
+//   GET /admin/create?titre=..&contenu=.. cree un article (protege, valide)
+//   GET /logout                           ferme la session
+use "oktopios_orm/orm.okp"
+use "oktopios_framework/routing.okp"
+use "oktopios_framework/auth.okp"
+use "oktopios_framework/view.okp"
+use "oktopios_framework/forms.okp"
+use "models/article.okp"
+inject Map
+inject File
+
+// --- Base de donnees : migration + donnee de depart ---
+var DB = "__DB__"
+if (File.exists(DB) == true) { File.remove(DB) }
+var schema = new Schema()
+schema.migrate(DB, new Article())
+var repo = new Repo(DB, new Article())
+
+var seed = new Article()
+seed.titre = "Bienvenue"
+seed.contenu = "Premier article de __APP__."
+repo.save(seed)
+
+// --- Services partages (utilises par les controleurs) ---
+var adminHash = authService.hashPassword("admin123")
+var res = new Response()
+var form = new Form()
+var vue = new View("templates")
+vue.setLayout("layout.html")
+
+// --- Controleurs (voient les services globaux ci-dessus) ---
+use "controllers/articles.okp"
+use "controllers/auth.okp"
+
+// --- Routage : public + protege (requireAuth) ---
+var pub = new Router()
+pub.use(logRequest)
+pub.get("/", listeArticles)
+pub.get("/articles/:id", montrerArticle)
+pub.get("/login", login)
+pub.get("/logout", logout)
+
+var priv = new Router()
+priv.use(logRequest)
+priv.use(requireAuth)
+priv.get("/admin/create", creerArticle)
+
+print("__APP__ demarre sur http://localhost:8000")
+priv.run(8000)
+'''
+
+FULL_LAYOUT = """<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>{{titre}} — __APP__</title>
+</head>
+<body>
+  <header>
+    <a href="/">__APP__</a> &middot;
+    <a href="/login?user=admin&pw=admin123">Connexion admin</a> &middot;
+    <a href="/logout">Deconnexion</a>
+  </header>
+  <main>
+    {{content}}
+  </main>
+  <footer><small>Propulse par oktopios-framework</small></footer>
+</body>
+</html>
+"""
+
+FULL_LIST = """<h1>Articles</h1>
+<ul>
+  {{articles}}
+</ul>
+<p>{{compteur}} article(s).</p>
+"""
+
+FULL_SHOW = """<article>
+  <h1>{{titre}}</h1>
+  <p>{{contenu}}</p>
+  <p><a href="/">&larr; Retour</a></p>
+</article>
+"""
+
+
+# --------------------------------------------------------------------------
 # Utilitaires
 # --------------------------------------------------------------------------
 
@@ -137,12 +324,21 @@ def _okp_binary():
 # Commandes
 # --------------------------------------------------------------------------
 
+def _sub(content, name):
+    """Substitue les placeholders des gabarits --full."""
+    return content.replace("__APP__", name).replace("__DB__", name.lower() + ".db")
+
+
 def cmd_new(args):
     name = args.name
     root = os.path.abspath(name)
     if os.path.exists(root) and os.listdir(root):
         print(f"[erreur] le dossier '{name}' existe deja et n'est pas vide.")
         return 1
+
+    if getattr(args, "full", False):
+        return _cmd_new_full(root, name)
+
     print(f"Creation du projet '{name}' ...")
     _write(os.path.join(root, ".env.local"), ENV_LOCAL)
     _write(os.path.join(root, ".env.prod"), ENV_PROD)
@@ -157,6 +353,29 @@ def cmd_new(args):
     print(f"Projet '{name}' pret. Pour demarrer :")
     print(f"  cd {name}")
     print("  oktopios serve")
+    return 0
+
+
+def _cmd_new_full(root, name):
+    """Échafaude une application MVC complète (modèle + migration + auth +
+    vues + routes protégées), structurée comme l'exemple blog_complet."""
+    print(f"Creation du projet complet '{name}' (MVC : ORM + Auth + Vues + Formulaires) ...")
+    _write(os.path.join(root, ".env.local"), ENV_LOCAL)
+    _write(os.path.join(root, ".env.prod"), ENV_PROD)
+    _write(os.path.join(root, ".gitignore"), GITIGNORE)
+    _write(os.path.join(root, "main.okp"), _sub(FULL_MAIN, name))
+    _write(os.path.join(root, "models", "article.okp"), FULL_MODEL)
+    _write(os.path.join(root, "controllers", "articles.okp"), FULL_CTRL_ARTICLES)
+    _write(os.path.join(root, "controllers", "auth.okp"), FULL_CTRL_AUTH)
+    _write(os.path.join(root, "templates", "layout.html"), _sub(FULL_LAYOUT, name))
+    _write(os.path.join(root, "templates", "list.html"), FULL_LIST)
+    _write(os.path.join(root, "templates", "show.html"), FULL_SHOW)
+    _write(os.path.join(root, "bin", "migrate.okp"), MIGRATE_OKP)
+    print("")
+    print(f"Projet complet '{name}' pret. Pour demarrer :")
+    print(f"  cd {name}")
+    print("  oktopios serve")
+    print("Puis : /  ->  /login?user=admin&pw=admin123  ->  /admin/create?titre=..&contenu=..")
     return 0
 
 
@@ -215,6 +434,8 @@ def build_parser():
 
     sp = sub.add_parser("new", help="cree un nouveau projet")
     sp.add_argument("name", help="nom du projet (dossier a creer)")
+    sp.add_argument("--full", action="store_true",
+                    help="application MVC complete (modele + migration + auth + vues + routes protegees)")
     sp.set_defaults(func=cmd_new)
 
     sp = sub.add_parser("make:model", help="genere un modele decore")

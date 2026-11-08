@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.0] — Scaffolding complet `oktopios new --full`
+
+### Ajouté
+- **`oktopios new --full <projet>`** — échafaude une application MVC **complète**
+  (et non le squelette minimal), structurée comme `blog_complet` :
+  - `models/article.okp` (modèle décoré `@Entity`/`@Id`/`@Column` + validation
+    `@NotNull`/`@MinLength`/`@MaxLength`) ;
+  - `controllers/articles.okp` (liste, détail, création validée) et
+    `controllers/auth.okp` (login, logout) ;
+  - `templates/layout.html`, `list.html`, `show.html` ;
+  - `main.okp` câblant ORM (migration + seed), services partagés, routeurs
+    public + protégé (`requireAuth`) et démarrage.
+  L'app générée tourne telle quelle (`oktopios serve`) et couvre tout le parcours
+  (liste → login → création protégée → détail).
+- Tests `tests/test_cli_scaffold.py` (structure + contenu de `new` et `new --full`).
+
 ## [0.8.0] — App de référence « blog complet » + tests e2e
 
 ### Ajouté

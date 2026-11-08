@@ -186,10 +186,18 @@ Décorateurs reconnus : `@NotNull`, `@Email`, `@Min(n)`, `@MinLength(n)`,
 L'installation expose la commande **`oktopios`** :
 
 ```bash
-oktopios new monapp            # échafaude un projet complet
-cd monapp
+oktopios new monapp            # squelette minimal
+oktopios new --full monblog    # application MVC COMPLETE (ORM + auth + vues + routes protégées)
+cd monblog
 oktopios serve                 # lance l'app (http://localhost:8000)
 ```
+
+Avec **`--full`**, l'app générée est structurée comme [`examples/blog_complet.okp`](examples/blog_complet.okp)
+et tourne telle quelle : `models/article.okp` (modèle décoré + validation),
+`controllers/articles.okp` + `controllers/auth.okp`, `templates/` (layout + list + show),
+et un `main.okp` qui migre la base, câble les routeurs public/protégé (`requireAuth`)
+et démarre le serveur. Parcours prêt : `/` → `/login?user=admin&pw=admin123` →
+`/admin/create?titre=..&contenu=..`.
 
 `oktopios new` crée une arborescence prête à l'emploi :
 
