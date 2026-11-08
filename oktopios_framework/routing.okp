@@ -74,8 +74,9 @@ class Router {
         Server.delete(path, lambda(req: any) => self.dispatch(handler, req))
         return this
     }
-    // Démarre le serveur (bloquant)
-    fun run(port: int) {
+    // Démarre le serveur (bloquant). `port` accepte un entier ou une chaîne
+    // (ex. valeur lue depuis une variable d'environnement).
+    fun run(port: any) {
         Server.run(port)
     }
     fun routes(): any {

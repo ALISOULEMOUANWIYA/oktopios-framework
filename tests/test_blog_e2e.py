@@ -58,16 +58,14 @@ def server():
         pytest.skip("exemple blog_complet.okp introuvable")
 
     port = _free_port()
-    # Copie temporaire avec le port de test (l'exemple code 8000 en dur).
-    src = open(APP, "r", encoding="utf-8").read().replace("8000", str(port))
-    app_tmp = os.path.join(REPO_ROOT, "_blog_e2e_tmp.okp")
     db_tmp = os.path.join(REPO_ROOT, "blog_complet.db")
-    with open(app_tmp, "w", encoding="utf-8") as f:
-        f.write(src)
+    # L'app lit OKTOPIOS_PORT (défaut 8000) — on l'injecte, pas de copie.
+    env = _child_env()
+    env["OKTOPIOS_PORT"] = str(port)
 
     proc = subprocess.Popen(
-        [sys.executable, "-m", "vm.main", app_tmp],
-        cwd=REPO_ROOT, env=_child_env(),
+        [sys.executable, "-m", "vm.main", APP],
+        cwd=REPO_ROOT, env=env,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
     # Attendre que le serveur réponde (ou échouer avec le log du process).
@@ -97,11 +95,10 @@ def server():
         proc.wait(timeout=5)
     except subprocess.TimeoutExpired:
         proc.kill()
-    for p in (app_tmp, db_tmp):
-        try:
-            os.remove(p)
-        except OSError:
-            pass
+    try:
+        os.remove(db_tmp)
+    except OSError:
+        pass
 
 
 def _get(port, path, cookie=None, follow=False):

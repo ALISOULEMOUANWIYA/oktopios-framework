@@ -24,6 +24,7 @@ use "oktopios_framework/view.okp"
 use "oktopios_framework/forms.okp"
 inject Map
 inject File
+inject Environnement
 
 // ---------------------------------------------------------------------
 //  Modèle
@@ -152,5 +153,8 @@ priv.use(logRequest)
 priv.use(requireAuth)
 priv.get("/admin/create", creerArticle)
 
-print("Blog complet sur http://localhost:8000")
-priv.run(8000)
+// Port configurable via OKTOPIOS_PORT (ex. `oktopios serve --port 8080`).
+var port = Environnement.getenv("OKTOPIOS_PORT")
+if (port == null) { port = 8000 }
+print("Blog complet sur http://localhost:" + port)
+priv.run(port)

@@ -40,6 +40,7 @@ use "oktopios_framework/routing.okp"
 use "oktopios_framework/config.okp"
 use "oktopios_framework/view.okp"
 use "controllers/home.okp"
+inject Environnement
 
 var cfg = new Config()
 cfg.load("local")
@@ -48,8 +49,11 @@ var router = new Router()
 router.use(logRequest)
 router.get("/", homeIndex)
 
-print("{name} demarre sur http://localhost:8000")
-router.run(8000)
+// Port configurable via OKTOPIOS_PORT (ex. `oktopios serve --port 8080`).
+var port = Environnement.getenv("OKTOPIOS_PORT")
+if (port == null) {{ port = 8000 }}
+print("{name} demarre sur http://localhost:" + port)
+router.run(port)
 '''
 
 HOME_CONTROLLER = '''// Controleur Home — genere par `oktopios new`.
@@ -219,6 +223,7 @@ use "oktopios_framework/forms.okp"
 use "models/article.okp"
 inject Map
 inject File
+inject Environnement
 
 // --- Base de donnees : migration + donnee de depart ---
 var DB = "__DB__"
@@ -256,8 +261,11 @@ priv.use(logRequest)
 priv.use(requireAuth)
 priv.get("/admin/create", creerArticle)
 
-print("__APP__ demarre sur http://localhost:8000")
-priv.run(8000)
+// Port configurable via OKTOPIOS_PORT (ex. `oktopios serve --port 8080`).
+var port = Environnement.getenv("OKTOPIOS_PORT")
+if (port == null) { port = 8000 }
+print("__APP__ demarre sur http://localhost:" + port)
+priv.run(port)
 '''
 
 FULL_LAYOUT = """<!doctype html>
@@ -401,9 +409,14 @@ def cmd_serve(args):
     if not os.path.exists(entry):
         print(f"[erreur] point d'entree introuvable : {entry}")
         return 1
+    env = dict(os.environ)
+    if getattr(args, "port", None):
+        # L'app générée lit OKTOPIOS_PORT (défaut 8000).
+        env["OKTOPIOS_PORT"] = str(args.port)
+        print(f"Port demande : {args.port}")
     cmd = _okp_binary() + [entry]
     print(f"Lancement : {' '.join(cmd)}")
-    return subprocess.call(cmd)
+    return subprocess.call(cmd, env=env)
 
 
 def cmd_migrate(args):
@@ -449,7 +462,7 @@ def build_parser():
 
     sp = sub.add_parser("serve", help="lance l'application (okp main.okp)")
     sp.add_argument("entry", nargs="?", help="point d'entree (defaut: main.okp)")
-    sp.add_argument("--port", type=int, help="(informatif) port, defini dans main.okp")
+    sp.add_argument("--port", type=int, help="port d'ecoute (via OKTOPIOS_PORT ; defaut 8000)")
     sp.set_defaults(func=cmd_serve)
 
     sp = sub.add_parser("migrate", help="execute bin/migrate.okp")

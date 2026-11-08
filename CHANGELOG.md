@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.2] — Port configurable (`serve --port` / `OKTOPIOS_PORT`)
+
+### Ajouté / Changé
+- **`oktopios serve --port <N>`** change réellement le port d'écoute (il
+  définit `OKTOPIOS_PORT` pour le processus). Les apps générées (`new` et
+  `new --full`) et l'exemple `blog_complet` lisent `OKTOPIOS_PORT` (défaut
+  `8000`). Évite l'erreur Windows **WinError 10013** quand `8000` est dans une
+  plage de ports réservée (Hyper-V / WSL / Docker).
+- `Router.run(port)` accepte désormais un port entier **ou** chaîne (valeur lue
+  d'une variable d'environnement).
+
 ## [0.9.1] — Invocation `python -m oktopios_framework`
 
 ### Ajouté

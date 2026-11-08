@@ -190,7 +190,13 @@ oktopios new monapp            # squelette minimal
 oktopios new --full monblog    # application MVC COMPLETE (ORM + auth + vues + routes protégées)
 cd monblog
 oktopios serve                 # lance l'app (http://localhost:8000)
+oktopios serve --port 8080     # autre port (utile si 8000 est réservé sous Windows)
 ```
+
+> **Windows — `WinError 10013` sur le port 8000 ?** Le port est dans une plage
+> réservée (Hyper-V / WSL / Docker). Lance sur un autre port avec
+> `oktopios serve --port 8080` (ou `set OKTOPIOS_PORT=8080`). Lister les plages
+> réservées : `netsh interface ipv4 show excludedportrange protocol=tcp`.
 
 Avec **`--full`**, l'app générée est structurée comme [`examples/blog_complet.okp`](examples/blog_complet.okp)
 et tourne telle quelle : `models/article.okp` (modèle décoré + validation),
