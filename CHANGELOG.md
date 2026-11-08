@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.10.0] — Pagination & messages flash
+
+### Ajouté
+- `oktopios_framework/pagination.okp` : classe **`Paginator`** (s'appuie sur
+  `Repo.count`/`Repo.page`) — `pageFrom(req)` (lit `?page=`), `items(page)`,
+  `totalPages()`, `links(page, baseUrl)` (barre « Précédent / Suivant »).
+- `oktopios_framework/flash.okp` : classe **`FlashBag`** + instance partagée
+  `flash` — messages one-shot entre requêtes (`add` / `pull` / `render`),
+  rangés par clé (en général le token de session) et effacés après affichage.
+- Démo `examples/blog_avance.okp` (relations `@ManyToOne` + pagination + flash +
+  auth) et templates `av_list.html` / `av_show.html`.
+- Tests e2e `tests/test_blog_avance_e2e.py`.
+
+### Corrigé
+- `oktopios serve` / `migrate` : `Ctrl+C` s'arrête proprement (plus de trace
+  `KeyboardInterrupt`).
+
+### Changé
+- Dépendance relevée à **`oktopios-orm>=0.3.0`** (relations + pagination).
+
 ## [0.9.3] — `serve` / `migrate` fiables (sans lanceur `okp.exe`)
 
 ### Corrigé

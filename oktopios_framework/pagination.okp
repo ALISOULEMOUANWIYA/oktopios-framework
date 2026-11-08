@@ -1,0 +1,62 @@
+// =====================================================================
+//  oktopios-framework — Pagination
+//  Chargé via :  use "oktopios_framework/pagination.okp"
+//
+//  S'appuie sur oktopios-orm (Repo.count / Repo.page).
+//    var pager = new Paginator(repo, 10)
+//    var page  = pager.pageFrom(req)          // lit ?page= (défaut 1)
+//    var items = pager.items(page)            // entités de la page
+//    var liens = pager.links(page, "/")       // barre « Précédent / Suivant »
+// =====================================================================
+inject ValueTO
+
+class Paginator {
+    var repo: any
+    var perPage: int
+
+    fun __construct(repo: any, perPage: int) {
+        this.repo = repo
+        this.perPage = perPage
+    }
+
+    // Numéro de page depuis ?page= (défaut 1, minimum 1).
+    fun pageFrom(req: any): int {
+        var q = req["query"]
+        var p = q["page"]
+        if (p == null) { return 1 }
+        var n = ValueTO.toInt(p)
+        if (n < 1) { return 1 }
+        return n
+    }
+
+    // Entités de la page demandée.
+    fun items(page: int): any {
+        return this.repo.page(this.perPage, page)
+    }
+
+    fun total(): int {
+        return this.repo.count()
+    }
+
+    // Nombre total de pages (arrondi au supérieur).
+    fun totalPages(): int {
+        var t = this.total()
+        if (t == 0) { return 1 }
+        return ValueTO.toInt((t + this.perPage - 1) / this.perPage)
+    }
+
+    // Barre de navigation « Précédent / Suivant » (HTML).
+    fun links(page: int, baseUrl: string): string {
+        var tp = this.totalPages()
+        var html = "<nav class='pagination'>"
+        if (page > 1) {
+            html = html + "<a href='" + baseUrl + "?page=" + (page - 1) + "'>&larr; Precedent</a> "
+        }
+        html = html + "<span>Page " + page + " / " + tp + "</span>"
+        if (page < tp) {
+            html = html + " <a href='" + baseUrl + "?page=" + (page + 1) + "'>Suivant &rarr;</a>"
+        }
+        html = html + "</nav>"
+        return html
+    }
+}

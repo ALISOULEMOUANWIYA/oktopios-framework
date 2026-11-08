@@ -428,7 +428,12 @@ def cmd_serve(args):
         print(f"Port demande : {args.port}")
     cmd = _okp_binary() + [entry]
     print(f"Lancement : {' '.join(cmd)}")
-    return subprocess.call(cmd, env=env)
+    try:
+        return subprocess.call(cmd, env=env)
+    except KeyboardInterrupt:
+        # Ctrl+C : le serveur enfant s'arrête proprement ; on sort sans trace.
+        print("\nServeur arrete.")
+        return 0
 
 
 def cmd_migrate(args):
@@ -438,7 +443,11 @@ def cmd_migrate(args):
         return 1
     cmd = _okp_binary() + [entry]
     print(f"Migrations : {' '.join(cmd)}")
-    return subprocess.call(cmd)
+    try:
+        return subprocess.call(cmd)
+    except KeyboardInterrupt:
+        print("\nInterrompu.")
+        return 0
 
 
 def cmd_version(args):

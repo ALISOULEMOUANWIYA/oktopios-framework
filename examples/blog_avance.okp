@@ -1,0 +1,151 @@
+// =====================================================================
+//  Blog avancé — relations @ManyToOne + pagination + messages flash
+//  Montre les fonctionnalités de oktopios-orm 0.3.0 et oktopios-framework
+//  0.10.0, par-dessus la pile MVC complète.
+//
+//  Lancer :  okp examples/blog_avance.okp   (port via OKTOPIOS_PORT)
+//    GET /?page=2                           liste paginée (auteur affiché)
+//    GET /articles/:id                      détail (auteur)
+//    GET /login?user=admin&pw=admin123      session
+//    GET /admin/create?titre=..&contenu=..  création (flash + redirection)
+// =====================================================================
+use "oktopios_orm/orm.okp"
+use "oktopios_framework/routing.okp"
+use "oktopios_framework/auth.okp"
+use "oktopios_framework/view.okp"
+use "oktopios_framework/forms.okp"
+use "oktopios_framework/pagination.okp"
+use "oktopios_framework/flash.okp"
+inject Map
+inject File
+inject Environnement
+inject ValueTO
+
+// --- Modèles (relation @ManyToOne) ---
+@Entity("auteurs")
+class Auteur {
+    @Id
+    var id: int
+    @Column("nom")
+    var nom: string
+}
+
+@Entity("articles")
+class Article {
+    @Id
+    var id: int
+    @NotNull
+    @MinLength(3)
+    @Column("titre")
+    var titre: string
+    @NotNull
+    @Column("contenu")
+    var contenu: string
+    @ManyToOne("Auteur")
+    var auteur: any
+}
+
+// --- Base : migration + seed ---
+var DB = "blog_avance.db"
+if (File.exists(DB) == true) { File.remove(DB) }
+var schema = new Schema()
+schema.migrate(DB, new Auteur())
+schema.migrate(DB, new Article())
+
+var repoAuteur = new Repo(DB, new Auteur())
+var auteur1 = new Auteur()
+auteur1.nom = "Awa"
+repoAuteur.save(auteur1)
+
+var repoArt = new Repo(DB, new Article())
+for (k in [1, 2, 3, 4, 5]) {
+    var a = new Article()
+    a.titre = "Article " + k
+    a.contenu = "Contenu de l'article " + k
+    a.auteur = auteur1
+    repoArt.save(a)
+}
+
+var adminHash = authService.hashPassword("admin123")
+
+// --- Services ---
+var res = new Response()
+var form = new Form()
+var vue = new View("examples/templates")
+vue.setLayout("blog_layout.html")
+var pager = new Paginator(repoArt, 3)
+
+fun cleFlash(req: any): any {
+    var t = authService.tokenFromRequest(req)
+    if (t == null) { return "anon" }
+    return t
+}
+
+// --- Contrôleurs ---
+fun liste(req: any): any {
+    var page = pager.pageFrom(req)
+    var articles = pager.items(page)
+    var lignes = ""
+    for (a in articles) {
+        lignes = lignes + "<li><a href='/articles/" + a.id + "'>" + a.titre + "</a> — <em>" + a.auteur.nom + "</em></li>"
+    }
+    var vars = { "titre": "Blog", "flash": flash.render(cleFlash(req)), "articles": lignes, "pagination": pager.links(page, "/") }
+    return vue.render("av_list.html", vars)
+}
+
+fun montrer(req: any): any {
+    var p = req["params"]
+    var a = repoArt.find(ValueTO.toInt(p["id"]))
+    if (a == null) { return res.status(404, "Introuvable") }
+    var vars = { "titre": a.titre, "contenu": a.contenu, "auteur": a.auteur.nom }
+    return vue.render("av_show.html", vars)
+}
+
+fun creer(req: any): any {
+    var art = new Article()
+    form.bind(art, req["query"])
+    var erreurs = form.validate(art)
+    var n = 0
+    for (e in erreurs) { n = n + 1 }
+    if (n > 0) {
+        flash.add(cleFlash(req), "error", "Validation echouee")
+        return res.redirect("/")
+    }
+    art.auteur = auteur1
+    repoArt.save(art)
+    flash.add(cleFlash(req), "success", "Article cree : " + art.titre)
+    return res.redirect("/")
+}
+
+fun login(req: any): any {
+    var q = req["query"]
+    if (q["user"] != "admin") { return res.status(401, "Inconnu") }
+    if (authService.verify(q["pw"], adminHash) == false) { return res.status(401, "Mot de passe invalide") }
+    var token = authService.login("admin")
+    var entetes = { "Set-Cookie": authService.cookieHeader(token) }
+    var r = { "body": "Connecte. <a href='/'>Accueil</a>", "headers": entetes }
+    return r
+}
+
+fun logout(req: any): any {
+    authService.logout(authService.tokenFromRequest(req))
+    return res.redirect("/")
+}
+
+// --- Routage ---
+var pub = new Router()
+pub.use(logRequest)
+pub.get("/", liste)
+pub.get("/articles/:id", montrer)
+pub.get("/login", login)
+pub.get("/logout", logout)
+
+var priv = new Router()
+priv.use(logRequest)
+priv.use(requireAuth)
+priv.get("/admin/create", creer)
+
+var port = Environnement.getenv("OKTOPIOS_PORT")
+if (port == null) { port = 8000 }
+print("Blog avance sur http://localhost:" + port)
+priv.run(port)

@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oktopios-framework"
-version = "0.9.3"
+version = "0.10.0"
 description = "Framework web MVC pour le langage Oktopios (facon Django / Symfony) — ORM, config par environnement, et plus"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.8"
 authors = [{ name = "Mouanwiya Ali Soule" }]
 keywords = ["oktopios", "framework", "web", "mvc", "orm", "okp"]
-dependencies = ["oktopios-orm>=0.2.0", "oktopios>=0.16.0"]
+dependencies = ["oktopios-orm>=0.3.0", "oktopios>=0.16.0"]
 
 [project.optional-dependencies]
 test = ["pytest>=7"]

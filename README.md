@@ -31,6 +31,7 @@ Django tire Python et Symfony tire PHP.
 - ✅ **Formulaires & validation** (binding `req.body` → modèle + décorateurs de validation)
 - ✅ **CLI & scaffolding** (`oktopios new`, générateurs, `serve`, `migrate`)
 - ✅ **Auth & sessions** (hash salé, sessions, cookie/Bearer, garde `requireAuth`)
+- ✅ **Pagination & messages flash** (`Paginator`, `FlashBag`)
 - ✅ **App de référence `blog_complet` + tests e2e** (toutes les couches, vérifiées via `pytest`)
 
 ## Structure
@@ -301,6 +302,42 @@ pytest                                 # depuis la racine du dépôt
 En développement (dépôts `oktopios`, `oktopios-orm`, `oktopios-framework` côte à
 côte), les sources frères sont ajoutées automatiquement au `PYTHONPATH` du
 serveur de test — aucune installation requise.
+
+## Pagination 📄
+
+```okp
+use "oktopios_framework/pagination.okp"
+
+var pager = new Paginator(repo, 10)      // repo (oktopios-orm), 10 par page
+fun liste(req: any): any {
+    var page = pager.pageFrom(req)       // lit ?page= (défaut 1)
+    var items = pager.items(page)        // entités de la page
+    var liens = pager.links(page, "/")   // barre « Précédent / Suivant »
+    // ... construire la vue avec items + liens ...
+}
+```
+
+`Paginator` : `pageFrom(req)`, `items(page)`, `total()`, `totalPages()`,
+`links(page, baseUrl)`.
+
+## Messages flash 💬
+
+Messages one-shot affichés **une fois** à la requête suivante, puis effacés
+(ex. « Article créé » après une action) :
+
+```okp
+use "oktopios_framework/flash.okp"
+
+// après l'action (clé = token de session pour isoler l'utilisateur)
+flash.add(authService.tokenFromRequest(req), "success", "Article cree")
+return res.redirect("/")
+
+// à l'affichage de la page suivante
+var html = flash.render(authService.tokenFromRequest(req))   // rend puis vide
+```
+
+`FlashBag` : `add(cle, type, message)`, `pull(cle)`, `render(cle)`. Démo
+complète (relations + pagination + flash) : `examples/blog_avance.okp`.
 
 ## Configuration `.env` (façon Symfony)
 

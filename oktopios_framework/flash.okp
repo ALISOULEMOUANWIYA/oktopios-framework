@@ -1,0 +1,56 @@
+// =====================================================================
+//  oktopios-framework — Messages flash (one-shot entre requêtes)
+//  Chargé via :  use "oktopios_framework/flash.okp"
+//
+//  Un message flash est ajouté lors d'une requête (ex. après une action)
+//  et affiché UNE fois à la requête suivante, puis effacé. Les messages
+//  sont rangés par clé — en général le token de session (authService) —
+//  pour isoler les utilisateurs.
+//
+//    flash.add(cle, "success", "Article cree")     // après l'action
+//    var html = flash.render(cle)                   // à l'affichage (puis vidé)
+// =====================================================================
+inject Map
+
+class FlashBag {
+    var store: any      // clé -> liste de { type, message }
+
+    fun __construct() {
+        this.store = {}
+    }
+
+    // Ajoute un message (type libre : "success", "error", "info"…).
+    fun add(cle: any, type: any, message: any): any {
+        var liste = []
+        if (Map.has(this.store, cle) == true) {
+            liste = Map.get(this.store, cle)
+        }
+        var item = { "type": type, "message": message }
+        liste = liste + [item]
+        var s = Map.set(this.store, cle, liste)
+        this.store = s
+        return null
+    }
+
+    // Récupère ET efface les messages de la clé.
+    fun pull(cle: any): any {
+        if (Map.has(this.store, cle) == false) { return [] }
+        var liste = Map.get(this.store, cle)
+        var s = Map.remove(this.store, cle)
+        this.store = s
+        return liste
+    }
+
+    // Rend les messages en HTML (et les efface).
+    fun render(cle: any): string {
+        var liste = this.pull(cle)
+        var html = ""
+        for (f in liste) {
+            html = html + "<div class='flash flash-" + f["type"] + "'>" + f["message"] + "</div>"
+        }
+        return html
+    }
+}
+
+// Instance partagée (à utiliser dans toute l'application).
+var flash = new FlashBag()
