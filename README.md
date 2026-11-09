@@ -117,9 +117,24 @@ vue.setLayout("layout.html")        // layout commun contenant {{content}}
 var html = vue.render("home.html", { "title": "Accueil", "nom": "Awa" })
 ```
 
-Les templates utilisent `{{variable}}` et `{{variable|defaut}}`. Avec un layout,
-le rendu de la page est inséré dans `{{content}}` du layout (les autres variables
-y restent disponibles). Un contrôleur renvoie directement la chaîne HTML :
+Les templates utilisent `{{variable}}`, `{{variable|defaut}}` et des **boucles**
+`{{#each liste}} … {{/each}}` (imbriquables) — à l'intérieur, `{{champ}}` désigne
+l'élément courant et `{{this}}` un scalaire :
+
+```okp
+// contrôleur : passe une liste de maps à la vue
+var vues = []
+for (a in articles) { vues = vues + [ { "titre": a.titre, "auteur": a.auteur.nom } ] }
+return vue.render("list.html", { "articles": vues })
+```
+```html
+<!-- list.html -->
+<ul>{{#each articles}}<li>{{titre}} — {{auteur}}</li>{{/each}}</ul>
+```
+
+Avec un layout, le rendu de la page est inséré dans `{{content}}` du layout (les
+autres variables y restent disponibles). Un contrôleur renvoie directement la
+chaîne HTML :
 
 ```okp
 fun home(req: any): any {

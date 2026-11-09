@@ -85,11 +85,13 @@ fun cleFlash(req: any): any {
 fun liste(req: any): any {
     var page = pager.pageFrom(req)
     var articles = pager.items(page)
-    var lignes = ""
+    // On passe une liste de maps à la vue, qui boucle avec {{#each}}.
+    var vues = []
     for (a in articles) {
-        lignes = lignes + "<li><a href='/articles/" + a.id + "'>" + a.titre + "</a> — <em>" + a.auteur.nom + "</em></li>"
+        var m = { "id": a.id, "titre": a.titre, "auteur": a.auteur.nom }
+        vues = vues + [m]
     }
-    var vars = { "titre": "Blog", "flash": flash.render(cleFlash(req)), "articles": lignes, "pagination": pager.links(page, "/") }
+    var vars = { "titre": "Blog", "flash": flash.render(cleFlash(req)), "articles": vues, "pagination": pager.links(page, "/") }
     return vue.render("av_list.html", vars)
 }
 

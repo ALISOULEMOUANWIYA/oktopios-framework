@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0] — Boucles de gabarits dans les vues
+
+### Changé
+- Les vues peuvent désormais **boucler** avec `{{#each liste}} … {{/each}}`
+  (nécessite `oktopios>=0.17.0`). L'exemple `examples/blog_avance.okp` passe une
+  **liste de maps** à la vue au lieu de construire le HTML dans le contrôleur :
+  ```
+  {{#each articles}}<li>{{titre}} — {{auteur}}</li>{{/each}}
+  ```
+- Dépendances relevées : `oktopios>=0.17.0`, `oktopios-orm>=0.4.0`
+  (relations `@OneToMany` / `@ManyToMany`).
+
 ## [0.10.0] — Pagination & messages flash
 
 ### Ajouté
