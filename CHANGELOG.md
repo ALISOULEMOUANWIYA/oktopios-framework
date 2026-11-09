@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.13.0] — Autorisation par rôle + API REST automatique
+
+### Ajouté
+- **Autorisation par rôle** (`auth.okp`) : `authService.loginAs(user, role)`,
+  `roleOf(req)`, et le middleware fabrique **`requireRole("admin")`** (401 si
+  non connecté, 403 si mauvais rôle). `login(user)` reste compatible (rôle
+  `"user"`).
+- **API REST automatique** (`rest.okp`) : `new Rest(router, repo).resource("/api/x")`
+  génère `GET` (liste JSON), `GET /:id` (404 si absent) et `POST` (crée depuis
+  le corps JSON, 201). Les entités (et relations chargées) sont sérialisées en JSON.
+- Démo `examples/rest_api.okp` (REST + rôle) et tests e2e `tests/test_rest_roles_e2e.py`.
+
+### Changé
+- Dépendance relevée à **`oktopios-orm>=0.6.0`**.
+
 ## [0.12.1] — `oktopios migrate` incrémental
 
 ### Changé

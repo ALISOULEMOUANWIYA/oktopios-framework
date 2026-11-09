@@ -1,2 +1,2 @@
 """oktopios-framework — framework web MVC pour Oktopios."""
-__version__ = "0.12.1"
+__version__ = "0.13.0"

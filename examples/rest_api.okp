@@ -1,0 +1,68 @@
+// =====================================================================
+//  Démo API REST + autorisation par rôle
+//    - API JSON CRUD générée depuis un Repo (Rest)
+//    - zone admin protégée par requireRole("admin")
+//
+//  Lancer :  okp examples/rest_api.okp   (port via OKTOPIOS_PORT)
+//    GET  /api/produits            liste JSON
+//    GET  /api/produits/:id        un produit (404 si absent)
+//    POST /api/produits            crée depuis le corps JSON (201)
+//    GET  /login?user=admin&pw=secret
+//    GET  /admin/stats             protégé (401 anon, 403 mauvais rôle)
+// =====================================================================
+use "oktopios_orm/orm.okp"
+use "oktopios_framework/routing.okp"
+use "oktopios_framework/auth.okp"
+use "oktopios_framework/rest.okp"
+inject Environnement
+inject File
+
+@Entity("produits")
+class Produit {
+    @Id var id: int
+    @Column("nom") var nom: string
+    @Column("prix") var prix: int
+}
+
+var DB = "rest_api.db"
+if (File.exists(DB) == true) { File.remove(DB) }
+var schema = new Schema()
+schema.migrate(DB, new Produit())
+var repo = new Repo(DB, new Produit())
+var p0 = new Produit()
+p0.nom = "Stylo"
+p0.prix = 2
+repo.save(p0)
+
+var adminHash = authService.hashPassword("secret")
+var res = new Response()
+
+fun login(req: any): any {
+    var q = req["query"]
+    if (q["user"] != "admin") { return res.status(401, "Inconnu") }
+    if (authService.verify(q["pw"], adminHash) == false) { return res.status(401, "Mot de passe") }
+    var token = authService.loginAs("admin", "admin")
+    var h = { "Set-Cookie": authService.cookieHeader(token) }
+    var r = { "body": "connecte", "headers": h }
+    return r
+}
+
+fun stats(req: any): any {
+    return "Zone admin : " + repo.count() + " produits"
+}
+
+// API publique (lecture + création JSON)
+var pub = new Router()
+pub.get("/login", login)
+var api = new Rest(pub, repo)
+api.resource("/api/produits")
+
+// Zone admin protégée par rôle
+var priv = new Router()
+priv.use(requireRole("admin"))
+priv.get("/admin/stats", stats)
+
+var port = Environnement.getenv("OKTOPIOS_PORT")
+if (port == null) { port = 8000 }
+print("REST API sur http://localhost:" + port)
+priv.run(port)

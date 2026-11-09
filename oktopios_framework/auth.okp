@@ -41,10 +41,16 @@ class Auth {
     }
 
     // --- Sessions ------------------------------------------------------
-    // Ouvre une session pour `username`, retourne le token à poser en cookie.
+    // Ouvre une session pour `username` (rôle "user"), retourne le token.
     fun login(username: any): any {
+        return this.loginAs(username, "user")
+    }
+
+    // Ouvre une session en précisant le rôle (ex. "admin").
+    fun loginAs(username: any, role: any): any {
         var token = Random.uuid()
-        var s = Map.set(this.sessions, token, username)
+        var record = { "user": username, "role": role }
+        var s = Map.set(this.sessions, token, record)
         this.sessions = s
         return token
     }
@@ -53,9 +59,25 @@ class Auth {
     fun userFor(token: any): any {
         if (token == null) { return null }
         if (Map.has(this.sessions, token) == true) {
-            return Map.get(this.sessions, token)
+            var rec = Map.get(this.sessions, token)
+            return rec["user"]
         }
         return null
+    }
+
+    // Rôle associé au token, ou null.
+    fun roleFor(token: any): any {
+        if (token == null) { return null }
+        if (Map.has(this.sessions, token) == true) {
+            var rec = Map.get(this.sessions, token)
+            return rec["role"]
+        }
+        return null
+    }
+
+    // Rôle de l'utilisateur courant de la requête (ou null).
+    fun roleOf(req: any): any {
+        return this.roleFor(this.tokenFromRequest(req))
     }
 
     // Ferme la session.
@@ -121,4 +143,24 @@ fun requireAuth(req: any): any {
         return r
     }
     return null
+}
+
+// Vérifie l'authentification ET le rôle. 401 si non connecté, 403 si mauvais rôle.
+fun controleRole(req: any, role: any): any {
+    var user = authService.check(req)
+    if (user == null) {
+        var r1 = { "status": 401, "body": "401 Non authentifie" }
+        return r1
+    }
+    if (authService.roleOf(req) != role) {
+        var r2 = { "status": 403, "body": "403 Acces interdit" }
+        return r2
+    }
+    return null
+}
+
+// Fabrique de middleware « avant » : garde par rôle.
+//   priv.use(requireRole("admin"))
+fun requireRole(role: any): any {
+    return lambda(req: any) => controleRole(req, role)
 }

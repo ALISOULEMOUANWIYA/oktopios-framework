@@ -36,6 +36,7 @@ Django tire Python et Symfony tire PHP.
 - ✅ **CLI & scaffolding** (`oktopios new`, générateurs, `serve`, `migrate`)
 - ✅ **Auth & sessions** (hash salé, sessions, cookie/Bearer, garde `requireAuth`)
 - ✅ **Pagination & messages flash** (`Paginator`, `FlashBag`)
+- ✅ **Autorisation par rôle** (`requireRole`) et **API REST auto** (`Rest`)
 - ✅ **App de référence `blog_complet` + tests e2e** (toutes les couches, vérifiées via `pytest`)
 
 ## Structure
@@ -357,6 +358,33 @@ var html = flash.render(authService.tokenFromRequest(req))   // rend puis vide
 
 `FlashBag` : `add(cle, type, message)`, `pull(cle)`, `render(cle)`. Démo
 complète (relations + pagination + flash) : `examples/blog_avance.okp`.
+
+## Autorisation par rôle 🛡️
+
+```okp
+var token = authService.loginAs("patron", "admin")   // session avec rôle
+authService.roleOf(req)                               // rôle courant
+
+var priv = new Router()
+priv.use(requireRole("admin"))     // 401 si anonyme, 403 si rôle != admin
+priv.get("/admin/stats", stats)
+```
+
+## API REST automatique 🔌
+
+Génère des endpoints JSON CRUD depuis un `Repo` (oktopios-orm) :
+
+```okp
+use "oktopios_framework/rest.okp"
+
+var api = new Rest(router, repo)
+api.resource("/api/articles")
+//  GET  /api/articles        -> liste JSON
+//  GET  /api/articles/:id    -> un élément (404 si absent)
+//  POST /api/articles        -> crée depuis le corps JSON (201)
+```
+
+Démo complète (REST + rôle) : `examples/rest_api.okp`.
 
 ## Configuration `.env` (façon Symfony)
 

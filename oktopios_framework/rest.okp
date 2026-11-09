@@ -1,0 +1,68 @@
+// =====================================================================
+//  oktopios-framework — API REST automatique
+//  Chargé via :  use "oktopios_framework/rest.okp"
+//
+//  Génère des endpoints JSON CRUD à partir d'un Repo (oktopios-orm) :
+//    var api = new Rest(router, repo)
+//    api.resource("/api/articles")
+//  -> GET  /api/articles        liste (JSON)
+//     GET  /api/articles/:id    un élément (404 si absent)
+//     POST /api/articles        crée depuis le corps JSON (201)
+//
+//  La sérialisation JSON des entités (et de leurs relations chargées) est
+//  gérée par le serveur natif.
+// =====================================================================
+inject Type
+inject Json
+inject Map
+
+class Rest {
+    var router: any
+    var repo: any
+
+    fun __construct(router: any, repo: any) {
+        this.router = router
+        this.repo = repo
+    }
+
+    // Enregistre les routes JSON CRUD pour `base` (ex. "/api/articles").
+    fun resource(base: string): Rest {
+        var self = this
+        this.router.get(base, lambda(req: any) => self.liste(req))
+        this.router.get(base + "/:id", lambda(req: any) => self.montrer(req))
+        this.router.post(base, lambda(req: any) => self.creer(req))
+        return this
+    }
+
+    // GET base — liste complète (tableau JSON).
+    fun liste(req: any): any {
+        var r = { "json": this.repo.all() }
+        return r
+    }
+
+    // GET base/:id — un élément, ou 404.
+    fun montrer(req: any): any {
+        var p = req["params"]
+        var e = this.repo.find(p["id"])
+        if (e == null) {
+            var nf = { "status": 404, "json": { "erreur": "introuvable" } }
+            return nf
+        }
+        var r = { "json": e }
+        return r
+    }
+
+    // POST base — crée une entité depuis le corps JSON (201).
+    fun creer(req: any): any {
+        var data = Json.parse(req["body"])
+        var obj = Type.create(this.repo.model)
+        for (k in Map.keys(data)) {
+            if (Type.has(obj, k) == true) {
+                Type.set(obj, k, Map.get(data, k))
+            }
+        }
+        this.repo.save(obj)
+        var r = { "status": 201, "json": obj }
+        return r
+    }
+}
