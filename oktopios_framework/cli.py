@@ -302,6 +302,35 @@ FULL_SHOW = """<article>
 </article>
 """
 
+FULL_DOCKERFILE = """# Image de production pour une application oktopios-framework.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Dependances : installe le framework (tire oktopios + oktopios-orm).
+RUN pip install --no-cache-dir oktopios-framework
+
+# Code de l'application.
+COPY . /app
+
+# Ecoute sur toutes les interfaces (indispensable en conteneur), port 8000.
+ENV OKTOPIOS_HOST=0.0.0.0
+ENV OKTOPIOS_PORT=8000
+EXPOSE 8000
+
+# Serveur HTTP multi-thread integre (python -m vm.main : sans dependre d'un
+# lanceur .exe). Derriere un reverse-proxy (nginx/Caddy) pour le TLS en prod.
+CMD ["python", "-m", "vm.main", "main.okp"]
+"""
+
+FULL_DOCKERIGNORE = """__pycache__/
+*.pyc
+*.db
+.env.local
+.git/
+.gitignore
+"""
+
 
 # --------------------------------------------------------------------------
 # Utilitaires
@@ -391,6 +420,8 @@ def _cmd_new_full(root, name):
     _write(os.path.join(root, "templates", "list.html"), FULL_LIST)
     _write(os.path.join(root, "templates", "show.html"), FULL_SHOW)
     _write(os.path.join(root, "bin", "migrate.okp"), MIGRATE_OKP)
+    _write(os.path.join(root, "Dockerfile"), FULL_DOCKERFILE)
+    _write(os.path.join(root, ".dockerignore"), FULL_DOCKERIGNORE)
     print("")
     print(f"Projet complet '{name}' pret. Pour demarrer :")
     print(f"  cd {name}")

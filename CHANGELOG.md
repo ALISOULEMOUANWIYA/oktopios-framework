@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0] — Déploiement production (Docker)
+
+### Ajouté
+- **Guide [`DEPLOYMENT.md`](DEPLOYMENT.md)** : conteneurisation, reverse-proxy
+  TLS (nginx), base persistante (volume), montée en charge.
+- `oktopios new --full` génère désormais un **`Dockerfile`** + `.dockerignore`
+  (app déployable prête à l'emploi).
+- `Router.run` lit **`OKTOPIOS_HOST`** (défaut `127.0.0.1`) : mettre `0.0.0.0`
+  pour écouter sur toutes les interfaces en conteneur.
+
+### Changé
+- Dépendance relevée à **`oktopios>=0.17.1`** (serveur HTTP multi-thread).
+
 ## [0.11.0] — Boucles de gabarits dans les vues
 
 ### Changé

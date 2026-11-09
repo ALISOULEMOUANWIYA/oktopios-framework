@@ -14,6 +14,7 @@ Troisième couche de l'écosystème, façon Django/Symfony :
 
 > 📖 **Nouveau ?** Commence par le **[guide de prise en main](GETTING_STARTED.md)** —
 > de l'installation à une application complète qui tourne, en passant par chaque couche.
+> Pour la mise en ligne : **[guide de déploiement](DEPLOYMENT.md)** (Docker, nginx, TLS).
 
 ## Installation
 

@@ -17,6 +17,7 @@ inject Server
 inject Log
 inject Type
 inject Map
+inject Environnement
 
 // Un middleware « avant »  : fun(req) -> réponse | null   (null = continuer)
 // Un middleware « après »  : fun(req, resp) -> resp        (transforme la réponse)
@@ -74,10 +75,13 @@ class Router {
         Server.delete(path, lambda(req: any) => self.dispatch(handler, req))
         return this
     }
-    // Démarre le serveur (bloquant). `port` accepte un entier ou une chaîne
-    // (ex. valeur lue depuis une variable d'environnement).
+    // Démarre le serveur (bloquant). `port` accepte un entier ou une chaîne.
+    // L'hôte d'écoute vient de OKTOPIOS_HOST (défaut 127.0.0.1) — mettre
+    // 0.0.0.0 en conteneur pour être joignable de l'extérieur.
     fun run(port: any) {
-        Server.run(port)
+        var host = Environnement.getenv("OKTOPIOS_HOST")
+        if (host == null) { host = "127.0.0.1" }
+        Server.run(port, host)
     }
     fun routes(): any {
         return Server.routes()

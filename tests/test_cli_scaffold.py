@@ -39,6 +39,8 @@ def test_new_full_structure(tmp_path, monkeypatch):
         ".env.local",
         ".env.prod",
         ".gitignore",
+        "Dockerfile",
+        ".dockerignore",
     ]
     for rel in expected:
         assert (root / rel).exists(), rel
