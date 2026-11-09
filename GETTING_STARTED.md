@@ -25,6 +25,16 @@ pip install oktopios-framework
 > `python -m pip install oktopios-framework`. De manière générale sous Windows,
 > `python -m <outil>` contourne tous les lanceurs `.exe` capricieux.
 
+> **Pour retrouver les commandes courtes `okp` / `oktopios`** (au lieu de
+> `python -m …`) quand les lanceurs `.exe` sont cassés, installe des lanceurs
+> `.cmd` natifs, immunisés contre ce bug :
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File tools/windows/install-launchers.ps1
+> ```
+> Ouvre ensuite un **nouveau** terminal : `okp monfichier.okp` et
+> `oktopios serve` fonctionnent nativement. (Les `.cmd` appellent simplement
+> l'interpréteur, sans passer par les `.exe` fragiles.)
+
 Vérifier :
 
 ```bash
