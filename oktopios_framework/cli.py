@@ -76,13 +76,22 @@ HOME_TEMPLATE = """<!doctype html>
 </html>
 """
 
-MIGRATE_OKP = '''// Migrations — declarez ici vos modeles puis Schema.migrate(...).
+MIGRATE_OKP = '''// Migrations incrementales (facon Alembic) — lancer : oktopios migrate
+// Ajoutez vos migrations A LA FIN de la liste (ne modifiez pas les anciennes).
+// Chaque migration ne s'applique qu'une fois (suivi dans oktopios_migrations).
 use "oktopios_orm/orm.okp"
-use "models/example.okp"
 
-var schema = new Schema()
-// schema.migrate(new Example())
-print("Migrations terminees.")
+var DB = "__DB__"
+var mig = new Migrator(DB)
+
+var migrations = [
+    { "nom": "001_articles", "sql": "CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, titre TEXT, contenu TEXT)" }
+    // { "nom": "002_ajout_colonne", "sql": "ALTER TABLE articles ADD COLUMN vues INTEGER DEFAULT 0" }
+]
+
+var n = mig.migrer(migrations)
+print("Migrations appliquees : " + n)
+print("Etat : " + mig.appliquees())
 '''
 
 MODEL_TEMPLATE = '''@Entity("{table}")
@@ -397,7 +406,7 @@ def cmd_new(args):
            HOME_CONTROLLER.format(name=name))
     _write(os.path.join(root, "templates", "home.html"), HOME_TEMPLATE)
     _write(os.path.join(root, "models", ".gitkeep"), "")
-    _write(os.path.join(root, "bin", "migrate.okp"), MIGRATE_OKP)
+    _write(os.path.join(root, "bin", "migrate.okp"), _sub(MIGRATE_OKP, name))
     print("")
     print(f"Projet '{name}' pret. Pour demarrer :")
     print(f"  cd {name}")
@@ -419,7 +428,7 @@ def _cmd_new_full(root, name):
     _write(os.path.join(root, "templates", "layout.html"), _sub(FULL_LAYOUT, name))
     _write(os.path.join(root, "templates", "list.html"), FULL_LIST)
     _write(os.path.join(root, "templates", "show.html"), FULL_SHOW)
-    _write(os.path.join(root, "bin", "migrate.okp"), MIGRATE_OKP)
+    _write(os.path.join(root, "bin", "migrate.okp"), _sub(MIGRATE_OKP, name))
     _write(os.path.join(root, "Dockerfile"), FULL_DOCKERFILE)
     _write(os.path.join(root, ".dockerignore"), FULL_DOCKERIGNORE)
     print("")

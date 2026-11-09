@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.1] — `oktopios migrate` incrémental
+
+### Changé
+- Le `bin/migrate.okp` généré par `new --full` utilise désormais le **`Migrator`**
+  d'`oktopios-orm` (migrations incrémentales façon Alembic) : on ajoute ses
+  migrations à la liste, `oktopios migrate` n'applique que les nouvelles
+  (idempotent). Dépendance relevée à `oktopios-orm>=0.5.0`.
+
 ## [0.12.0] — Déploiement production (Docker)
 
 ### Ajouté
