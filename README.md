@@ -379,12 +379,18 @@ use "oktopios_framework/rest.okp"
 
 var api = new Rest(router, repo)
 api.resource("/api/articles")
-//  GET  /api/articles        -> liste JSON
-//  GET  /api/articles/:id    -> un élément (404 si absent)
-//  POST /api/articles        -> crée depuis le corps JSON (201)
+//  GET    /api/articles            -> liste JSON (pagination : ?page=&perPage=)
+//  GET    /api/articles/:id        -> un élément (404 si absent)
+//  POST   /api/articles            -> crée (201 ; 422 si invalide)
+//  PUT    /api/articles/:id        -> met à jour (200 ; 404/422)
+//  DELETE /api/articles/:id        -> supprime (200)
 ```
 
-Démo complète (REST + rôle) : `examples/rest_api.okp`.
+- **Pagination** : `?page=2&perPage=10` → `{ data, page, perPage, total }`.
+- **Validation** : `POST`/`PUT` valident via les décorateurs du modèle → **422** `{ erreurs }`.
+- **Relations** : non incluses par défaut ; `?include=auteur,tags` les sérialise.
+
+Démo complète (REST CRUD + rôle) : `examples/rest_api.okp`.
 
 ## Configuration `.env` (façon Symfony)
 

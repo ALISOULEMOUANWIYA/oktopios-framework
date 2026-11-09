@@ -98,6 +98,22 @@ def test_rest_list_is_json(server):
     items = json.loads(body)
     assert isinstance(items, list)
     assert items[0]["nom"] == "Stylo"
+    assert "categorie" not in items[0]        # relation non incluse par défaut
+
+
+def test_rest_include_relation(server):
+    st, body, _ = _req(server, "GET", "/api/produits/1?include=categorie")
+    assert st == 200
+    one = json.loads(body)
+    assert one["categorie"]["nom"] == "Papeterie"   # relation incluse
+
+
+def test_rest_pagination_envelope(server):
+    st, body, _ = _req(server, "GET", "/api/produits?page=1&perPage=1")
+    assert st == 200
+    env = json.loads(body)
+    assert env["page"] == 1 and env["total"] >= 1
+    assert isinstance(env["data"], list) and len(env["data"]) == 1
 
 
 def test_rest_get_one_and_404(server):
@@ -107,12 +123,29 @@ def test_rest_get_one_and_404(server):
     assert st2 == 404
 
 
-def test_rest_post_creates(server):
+def test_rest_post_validation_422(server):
+    st, body, _ = _req(server, "POST", "/api/produits",
+                       body='{"nom": "x", "prix": 1}')   # nom trop court (@MinLength 2)
+    assert st == 422
+    assert "erreurs" in json.loads(body)
+
+
+def test_rest_post_put_delete(server):
     st, body, _ = _req(server, "POST", "/api/produits",
                        body='{"nom": "Cahier", "prix": 3}')
     assert st == 201
     created = json.loads(body)
-    assert created["nom"] == "Cahier" and created["id"] >= 2
+    pid = created["id"]
+    assert created["nom"] == "Cahier" and pid >= 2
+    # PUT met à jour
+    stp, bodyp, _ = _req(server, "PUT", "/api/produits/%d" % pid,
+                         body='{"nom": "Cahier A4", "prix": 4}')
+    assert stp == 200 and json.loads(bodyp)["nom"] == "Cahier A4"
+    # DELETE supprime
+    std, _, _ = _req(server, "DELETE", "/api/produits/%d" % pid)
+    assert std == 200
+    stg, _, _ = _req(server, "GET", "/api/produits/%d" % pid)
+    assert stg == 404
 
 
 def test_role_guard(server):

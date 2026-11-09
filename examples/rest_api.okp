@@ -17,21 +17,38 @@ use "oktopios_framework/rest.okp"
 inject Environnement
 inject File
 
+@Entity("categories")
+class Categorie {
+    @Id var id: int
+    @Column("nom") var nom: string
+}
+
 @Entity("produits")
 class Produit {
     @Id var id: int
+    @NotNull
+    @MinLength(2)
     @Column("nom") var nom: string
     @Column("prix") var prix: int
+    @ManyToOne("Categorie") var categorie: any
 }
 
 var DB = "rest_api.db"
 if (File.exists(DB) == true) { File.remove(DB) }
 var schema = new Schema()
+schema.migrate(DB, new Categorie())
 schema.migrate(DB, new Produit())
+
+var repoCat = new Repo(DB, new Categorie())
+var cat = new Categorie()
+cat.nom = "Papeterie"
+repoCat.save(cat)
+
 var repo = new Repo(DB, new Produit())
 var p0 = new Produit()
 p0.nom = "Stylo"
 p0.prix = 2
+p0.categorie = cat
 repo.save(p0)
 
 var adminHash = authService.hashPassword("secret")

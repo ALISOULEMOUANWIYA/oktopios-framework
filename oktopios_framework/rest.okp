@@ -2,45 +2,134 @@
 //  oktopios-framework — API REST automatique
 //  Chargé via :  use "oktopios_framework/rest.okp"
 //
-//  Génère des endpoints JSON CRUD à partir d'un Repo (oktopios-orm) :
 //    var api = new Rest(router, repo)
 //    api.resource("/api/articles")
-//  -> GET  /api/articles        liste (JSON)
-//     GET  /api/articles/:id    un élément (404 si absent)
-//     POST /api/articles        crée depuis le corps JSON (201)
 //
-//  La sérialisation JSON des entités (et de leurs relations chargées) est
-//  gérée par le serveur natif.
+//  Endpoints générés :
+//    GET    base            liste JSON (pagination via ?page=&perPage=)
+//    GET    base/:id        un élément (404 si absent)
+//    POST   base            crée depuis le corps JSON (201, 422 si invalide)
+//    PUT    base/:id        met à jour (200, 404 si absent, 422 si invalide)
+//    DELETE base/:id        supprime (200)
+//
+//  Sérialisation imbriquée contrôlée : par défaut les relations ne sont PAS
+//  incluses ; `?include=auteur,tags` les ajoute. La validation s'appuie sur les
+//  décorateurs du modèle (@NotNull/@Email/@Min…), via `Form`.
 // =====================================================================
+use "oktopios_framework/forms.okp"
 inject Type
 inject Json
 inject Map
+inject String
+inject ValueTO
 
 class Rest {
     var router: any
     var repo: any
+    var form: any
+    var perPage: int
 
     fun __construct(router: any, repo: any) {
         this.router = router
         this.repo = repo
+        this.form = new Form()
+        this.perPage = 20
     }
 
-    // Enregistre les routes JSON CRUD pour `base` (ex. "/api/articles").
     fun resource(base: string): Rest {
         var self = this
         this.router.get(base, lambda(req: any) => self.liste(req))
         this.router.get(base + "/:id", lambda(req: any) => self.montrer(req))
         this.router.post(base, lambda(req: any) => self.creer(req))
+        this.router.put(base + "/:id", lambda(req: any) => self.modifier(req))
+        this.router.delete(base + "/:id", lambda(req: any) => self.supprimer(req))
         return this
     }
 
-    // GET base — liste complète (tableau JSON).
-    fun liste(req: any): any {
-        var r = { "json": this.repo.all() }
-        return r
+    // --- Sérialisation (base + relations demandées via ?include=) --------
+    fun contient(liste: any, x: any): bool {
+        for (e in liste) {
+            if (e == x) { return true }
+        }
+        return false
     }
 
-    // GET base/:id — un élément, ou 404.
+    fun includesDe(req: any): any {
+        var q = req["query"]
+        if (Map.has(q, "include") == false) { return [] }
+        return String.split(q["include"], ",")
+    }
+
+    // Convertit une entité en map : colonnes toujours, relations seulement si
+    // listées dans `includes`.
+    fun serialiser(entity: any, includes: any): any {
+        var m = {}
+        for (f in Type.fields(entity)) {
+            var estRelation = this.repo.schema.isRelation(entity, f)
+            if (this.repo.schema.isCollection(entity, f) == true) { estRelation = true }
+            if (estRelation == false) {
+                m = Map.set(m, f, Type.get(entity, f))
+            } else {
+                if (this.contient(includes, f) == true) {
+                    m = Map.set(m, f, Type.get(entity, f))
+                }
+            }
+        }
+        return m
+    }
+
+    // --- Validation ------------------------------------------------------
+    // Renvoie null si valide, sinon une réponse 422 avec les erreurs.
+    fun valider(obj: any): any {
+        var erreurs = this.form.validate(obj)
+        var n = 0
+        for (e in erreurs) { n = n + 1 }
+        if (n > 0) {
+            var r = { "status": 422, "json": { "erreurs": erreurs } }
+            return r
+        }
+        return null
+    }
+
+    // Remplit un objet depuis un map de données (champs connus seulement).
+    fun remplir(obj: any, data: any): any {
+        for (k in Map.keys(data)) {
+            if (Type.has(obj, k) == true) {
+                Type.set(obj, k, Map.get(data, k))
+            }
+        }
+        return obj
+    }
+
+    // --- Endpoints -------------------------------------------------------
+    fun liste(req: any): any {
+        var q = req["query"]
+        var includes = this.includesDe(req)
+        var entities = null
+        var meta = null
+        if (Map.has(q, "page") == true) {
+            var page = ValueTO.toInt(q["page"])
+            if (page < 1) { page = 1 }
+            var pp = this.perPage
+            if (Map.has(q, "perPage") == true) { pp = ValueTO.toInt(q["perPage"]) }
+            entities = this.repo.page(pp, page)
+            meta = { "page": page, "perPage": pp, "total": this.repo.count() }
+        } else {
+            entities = this.repo.all()
+        }
+        var arr = []
+        for (e in entities) {
+            arr = arr + [this.serialiser(e, includes)]
+        }
+        if (meta != null) {
+            var env = { "data": arr, "page": meta["page"], "perPage": meta["perPage"], "total": meta["total"] }
+            var r = { "json": env }
+            return r
+        }
+        var r2 = { "json": arr }
+        return r2
+    }
+
     fun montrer(req: any): any {
         var p = req["params"]
         var e = this.repo.find(p["id"])
@@ -48,21 +137,41 @@ class Rest {
             var nf = { "status": 404, "json": { "erreur": "introuvable" } }
             return nf
         }
-        var r = { "json": e }
+        var r = { "json": this.serialiser(e, this.includesDe(req)) }
         return r
     }
 
-    // POST base — crée une entité depuis le corps JSON (201).
     fun creer(req: any): any {
         var data = Json.parse(req["body"])
         var obj = Type.create(this.repo.model)
-        for (k in Map.keys(data)) {
-            if (Type.has(obj, k) == true) {
-                Type.set(obj, k, Map.get(data, k))
-            }
-        }
+        this.remplir(obj, data)
+        var invalide = this.valider(obj)
+        if (invalide != null) { return invalide }
         this.repo.save(obj)
-        var r = { "status": 201, "json": obj }
+        var r = { "status": 201, "json": this.serialiser(obj, []) }
+        return r
+    }
+
+    fun modifier(req: any): any {
+        var p = req["params"]
+        var e = this.repo.find(p["id"])
+        if (e == null) {
+            var nf = { "status": 404, "json": { "erreur": "introuvable" } }
+            return nf
+        }
+        var data = Json.parse(req["body"])
+        this.remplir(e, data)
+        var invalide = this.valider(e)
+        if (invalide != null) { return invalide }
+        this.repo.update(e)
+        var r = { "json": this.serialiser(e, []) }
+        return r
+    }
+
+    fun supprimer(req: any): any {
+        var p = req["params"]
+        this.repo.removeById(p["id"])
+        var r = { "json": { "supprime": true } }
         return r
     }
 }

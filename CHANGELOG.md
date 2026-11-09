@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.14.0] — API REST : CRUD complet, pagination, validation, includes
+
+### Ajouté
+- `Rest.resource` génère aussi **`PUT base/:id`** (met à jour, 404/422) et
+  **`DELETE base/:id`** (supprime). CRUD JSON complet.
+- **Pagination JSON** : `GET base?page=&perPage=` renvoie une enveloppe
+  `{ data, page, perPage, total }` (sinon la liste complète).
+- **Validation** : `POST`/`PUT` valident le corps via `Form` (décorateurs du
+  modèle) et renvoient **422** `{ "erreurs": [...] }` si invalide.
+- **Sérialisation imbriquée contrôlée** : les relations ne sont **pas** incluses
+  par défaut ; `?include=auteur,tags` les ajoute.
+
+### Changé
+- Dépendance relevée à **`oktopios-orm>=0.7.0`** (`Repo.update`/`removeById`).
+
 ## [0.13.0] — Autorisation par rôle + API REST automatique
 
 ### Ajouté
